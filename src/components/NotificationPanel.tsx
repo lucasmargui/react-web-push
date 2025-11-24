@@ -18,13 +18,13 @@ interface Metadata {
 export const NotificationPanel = () => {
   const { toast } = useToast();
   const [notificationType, setNotificationType] = useState<"single" | "broadcast">("single");
-  const [recipientId, setRecipientId] = useState("");
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [icon, setIcon] = useState("");
-  const [image, setImage] = useState("");
+  const [recipientId, setRecipientId] = useState("1");
+  const [title, setTitle] = useState("Teste");
+  const [subtitle, setBody] = useState("teste");
+  const [icon, setIcon] = useState("img/codigo-qr.png");
+  const [image, setImage] = useState("img/formulario.png");
   const [url, setUrl] = useState("");
-  const [color, setColor] = useState("#3B82F6");
+  const [color, setColor] = useState("#03c903ff");
   const [urgent, setUrgent] = useState(false);
   const [count, setCount] = useState(1);
   const [metadata, setMetadata] = useState<Metadata[]>([{ id: "", role: "" }]);
@@ -68,7 +68,7 @@ export const NotificationPanel = () => {
       return false;
     }
 
-    if (!body.trim()) {
+    if (!subtitle.trim()) {
       toast({
         title: "Erro de validação",
         description: "Corpo da mensagem é obrigatório.",
@@ -85,31 +85,37 @@ export const NotificationPanel = () => {
 
     setSending(true);
 
-    const payload = {
-      type: notificationType,
-      recipientId: notificationType === "single" ? recipientId : undefined,
-      notification: {
-        title,
-        body,
-        icon: icon || undefined,
-        image: image || undefined,
-        tag: generateTag(),
-        url: url || undefined,
-        color,
-        urgent,
-        count,
-        metadata: metadata.filter((m) => m.id || m.role),
-      },
-    };
+     
+     const id = recipientId;
 
-    // Simula envio (sem backend)
+      const payload = {
+          title: title, 
+          body: subtitle, 
+          icon: icon, 
+          image: image, 
+          tag: generateTag(), 
+          url: url, 
+          color: color,
+          urgent: urgent,
+          count: count, 
+          metadata: metadata
+      };
+
+      const body = { ids: [id], payload, pushType: 'single'};
+      
+      console.log(body, [id], 'single')
+
+      const response = await fetch('http://localhost:7000/push/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+      });
+
+    
+
+
     setTimeout(() => {
       console.log("Notificação enviada:", payload);
-      
-      toast({
-        title: "✓ Notificação enviada!",
-        description: `Notificação ${notificationType} enviada com sucesso.`,
-      });
 
       setSending(false);
     }, 1500);
@@ -176,12 +182,12 @@ export const NotificationPanel = () => {
               <Textarea
                 id="body"
                 placeholder="Ex: Você recebeu uma nova mensagem..."
-                value={body}
+                value={subtitle}
                 onChange={(e) => setBody(e.target.value)}
                 rows={3}
                 maxLength={200}
               />
-              <p className="text-xs text-muted-foreground">{body.length}/200 caracteres</p>
+              <p className="text-xs text-muted-foreground">{subtitle.length}/200 caracteres</p>
             </div>
 
             {/* Ícone */}
@@ -339,7 +345,7 @@ export const NotificationPanel = () => {
             <CardContent>
               <NotificationPreview
                 title={title}
-                body={body}
+                body={subtitle}
                 icon={icon}
                 image={image}
                 color={color}

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Send, History, Settings, Bell } from "lucide-react";
+import { LayoutDashboard, Send, History, Settings, Bell, User } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -13,11 +13,13 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Enviar Notificação", url: "/send", icon: Send },
   { title: "Histórico", url: "/history", icon: History },
   { title: "Configurações", url: "/settings", icon: Settings },
+  { title: "Profile", url: "/userprofile", icon: User }
 ];
 
 export function AppSidebar() {

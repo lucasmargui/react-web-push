@@ -7,14 +7,18 @@ import { cn } from "@/lib/utils";
 
 const ToastProvider = ToastPrimitives.Provider;
 
+// ToastViewport agora suporta a variant push
 const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
-  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
->(({ className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport> & { variant?: string }
+>(({ className, variant, ...props }, ref) => (
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      "fixed z-[100] flex max-h-screen w-full flex-col-reverse p-4 md:max-w-[420px]",
+      variant === "push"
+        ? "top-4 right-4 sm:top-4 sm:right-4"
+        : "bottom-0 sm:right-0 sm:bottom-auto sm:flex-col",
       className,
     )}
     {...props}
@@ -29,6 +33,7 @@ const toastVariants = cva(
       variant: {
         default: "border bg-background text-foreground",
         destructive: "destructive group border-destructive bg-destructive text-destructive-foreground",
+        push: "border bg-background text-foreground", // renomeada
       },
     },
     defaultVariants: {
@@ -36,7 +41,6 @@ const toastVariants = cva(
     },
   },
 );
-
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & VariantProps<typeof toastVariants>
