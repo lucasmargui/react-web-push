@@ -13,7 +13,7 @@ const History = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch("http://98.93.193.4:7000/pushes/get");
+        const res = await fetch("http://main-domain-example.online:7000/pushes/get");
         const data = await res.json();
 
         const formattedData = data.map(item => ({

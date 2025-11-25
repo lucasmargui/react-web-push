@@ -35,7 +35,7 @@ const UserInfo = () => {
   const handleClearJson = async () => {
     setClearing(true);
     try {
-      const res = await fetch("http://98.93.193.4:7001/admin/clear-json", {
+      const res = await fetch("http://main-domain-example.online:7001/admin/clear-json", {
         method: "POST",
       });
 

@@ -24,11 +24,11 @@ useEffect(() => {
   const fetchHistory = async () => {
     try {
       // Busca os pushes
-      const res = await fetch("http://98.93.193.4:7000/pushes/get");
+      const res = await fetch("http://main-domain-example.online:7000/pushes/get");
       const data = await res.json();
 
       // Busca as subscriptions
-      const resSub = await fetch("http://98.93.193.4:7001/subscriptions/list");
+      const resSub = await fetch("http://main-domain-example.online:7001/subscriptions/list");
       const dataSub = await resSub.json(); // Corrigido: resSub.json() em vez de res.json()
 
       let usersCount = Object.values(dataSub).length;
