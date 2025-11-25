@@ -1,5 +1,6 @@
 import { LayoutDashboard, Send, History, Settings, Bell, User } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import  NotificationStatus from "@/components/ui/status-active";
 import { useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -19,7 +20,8 @@ const items = [
   { title: "Enviar Notificação", url: "/send", icon: Send },
   { title: "Histórico", url: "/history", icon: History },
   { title: "Configurações", url: "/settings", icon: Settings },
-  { title: "Profile", url: "/userprofile", icon: User }
+  { title: "Profile", url: "/userprofile", icon: User },
+  { title: "Api", url: "/api", icon: User }
 ];
 
 export function AppSidebar() {
@@ -34,6 +36,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar className={open ? "w-60" : "w-14"} collapsible="icon">
+      <NotificationStatus/>
       <SidebarContent>
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2">

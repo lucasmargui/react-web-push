@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 // Função auxiliar para converter VAPID key
 function urlBase64ToUint8Array(base64String) {
@@ -8,13 +9,90 @@ function urlBase64ToUint8Array(base64String) {
   return new Uint8Array([...rawData].map(char => char.charCodeAt(0)));
 }
 
-const NotificationBanner = ({ id }) => {
+const NotificationBanner = () => {
+  const { toast } = useToast();
+
   const [visible, setVisible] = useState(false);
+ 
+
+  const userId = 'user-1';
 
   useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 500);
-    return () => clearTimeout(timer);
-  }, []);
+
+    const checkAndShowBanner = async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+
+        // Se não existir subscription, já mostra o banner
+        if (!subscription) {
+          console.warn("Nenhuma subscription encontrada → exibindo banner.");
+          setVisible(true);
+          return;
+        }
+
+        // Faz a requisição antes de exibir o banner
+        const res = await fetch("http://98.93.193.4:7001/subscriptions/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: userId,
+            endpoint: subscription.endpoint,
+          }),
+        });
+
+        const result = await res.json();
+
+        // Se o backend mandar exibir
+        if (result.showBanner === true) {
+          const timer = setTimeout(() => setVisible(true), 500);
+          return () => clearTimeout(timer);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar banner:", error);
+      }
+    };
+
+    checkAndShowBanner()
+ 
+  }, [userId]);
+
+  
+// ----------------------
+// Funções auxiliares
+// ----------------------
+
+// Carrega ou cria uma subscription push
+async function getOrCreateSubscription(publicVapidKey) {
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+
+  if (!subscription) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
+    });
+  }
+
+  return subscription;
+}
+
+// Envia dados para o backend
+async function sendSubscriptionToServer({ id, subscription, active }) {
+  const response = await fetch("http://98.93.193.4:7001/subscriptions/save", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, subscription, active }),
+  });
+
+  return response.json();
+}
+
+
+
+  // ----------------------
+  // Handlers (limpos)
+  // ----------------------
 
   const handleYes = async () => {
     try {
@@ -24,42 +102,77 @@ const NotificationBanner = ({ id }) => {
       const publicVapidKey =
         "BNyR2VIokuew2M6DO_rVgVdJmqJwiG69i4jzMiLOtw-Eyf3UGuJLONEgdycUB6lwksnfS9dl4zgkvnpcOO4X4WA";
 
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
+      const subscription = await getOrCreateSubscription(publicVapidKey);
 
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
-        });
-      }
-
-      const response = await fetch("http://localhost:7001/subscriptions/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, subscription }),
+      const data = await sendSubscriptionToServer({
+        id: userId,
+        subscription,
+        active: true,
       });
-      const data = await response.json();
 
-      console.log("Response do servidor:", data);
+      console.log("Response do servidor (YES):", data);
+       
+      toast({
+        title: "Success!",
+        description: "Notificação ativada",
+        variant: "default",
+      });
 
 
-      alert("Resposta do servidor:\n" + JSON.stringify(data, null, 2));
+
+
     } catch (error) {
-      console.error("Erro ao enviar ID:", error);
-      alert("Erro ao enviar ID.");
+      console.error("Erro no handleYes:", error);
+      toast({
+        title: "Erro ao processar sua solicitação.",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setVisible(false);
-      // Caso queira recarregar a página:
-      // location.reload();
-      // Caso tenha botão de adicionar ID, manipule aqui
-      // addIdButton.style.display = 'inline-block';
+      location.reload()
     }
   };
 
-  const handleNo = () => {
-    setVisible(false);
+  
+
+
+  const handleNo = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return;
+
+      const publicVapidKey =
+        "BNyR2VIokuew2M6DO_rVgVdJmqJwiG69i4jzMiLOtw-Eyf3UGuJLONEgdycUB6lwksnfS9dl4zgkvnpcOO4X4WA";
+
+      const subscription = await getOrCreateSubscription(publicVapidKey);
+
+      const data = await sendSubscriptionToServer({
+        id: userId,
+        subscription,
+        active: false,
+      });
+
+      console.log("Response do servidor (NO):", data);
+      toast({
+        title: "Success!",
+        description: "Notificação desativada!",
+        variant: "destructive",
+      });
+
+    } catch (error) {
+      console.error("Erro no handleNo:", error);
+      toast({
+        title: "Erro ao processar sua solicitação.",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setVisible(false);
+      location.reload()
+    }
   };
+
 
   return (
     <div

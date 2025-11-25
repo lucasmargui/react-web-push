@@ -14,7 +14,8 @@ import UserProfile from "./pages/UserProfile";
 import { registerWorker } from "../public/serviceWorkerRegister.js"; // função ajustada
 import { useToast } from "@/hooks/use-toast";
 import { CustomToastContainer } from "@/components/ui/custom-toast-container.js";
-import { useCustomToast } from "@/hooks/use-custom-toast.js";
+
+import ApiDocumentation  from "./pages/ApiDoc";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => {
             <Route path="/history" element={<DashboardLayout><History /></DashboardLayout>} />
             <Route path="/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
             <Route path="/userprofile" element={<DashboardLayout><UserProfile /></DashboardLayout>} />
+            <Route path="/api" element={<DashboardLayout><ApiDocumentation /></DashboardLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

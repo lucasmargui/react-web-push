@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect ,useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,22 +17,41 @@ interface Metadata {
 
 export const NotificationPanel = () => {
   const { toast } = useToast();
-  const [notificationType, setNotificationType] = useState<"single" | "broadcast">("single");
-  const [recipientId, setRecipientId] = useState("1");
+  const [notificationType, setNotificationType] = useState<"single" | "broadcast" | "urgent">("single");
+  const [subs, setSubs] = useState({});
+  const [selectedId, setSelectedId] = useState<string>("");
+
   const [title, setTitle] = useState("Teste");
   const [subtitle, setBody] = useState("teste");
   const [icon, setIcon] = useState("img/codigo-qr.png");
   const [image, setImage] = useState("img/formulario.png");
   const [url, setUrl] = useState("");
   const [color, setColor] = useState("#03c903ff");
-  const [urgent, setUrgent] = useState(false);
   const [count, setCount] = useState(1);
   const [metadata, setMetadata] = useState<Metadata[]>([{ id: "", role: "" }]);
   const [sending, setSending] = useState(false);
 
+  
+
+  useEffect(() => {
+    const loadSubscriptions = async () => {
+      try {
+        const res = await fetch("http://98.93.193.4:7001/subscriptions/list");
+        const data = await res.json();
+      
+        setSubs(data); // array de objetos com { id, ... }
+      } catch (error) {
+        console.error("Erro ao carregar subscriptions:", error);
+      }
+    };
+
+    loadSubscriptions();
+  }, []);
+
+
   const generateTag = () => {
     const timestamp = Date.now();
-    return `invite-${recipientId || "broadcast"}-${timestamp}`;
+    return `invite-${selectedId || "broadcast"}-${timestamp}`;
   };
 
   const addMetadata = () => {
@@ -50,7 +69,7 @@ export const NotificationPanel = () => {
   };
 
   const validateForm = () => {
-    if (notificationType === "single" && !recipientId.trim()) {
+    if (notificationType === "single" && !selectedId.trim()) {
       toast({
         title: "Erro de validação",
         description: "ID do destinatário é obrigatório para notificação single.",
@@ -80,13 +99,16 @@ export const NotificationPanel = () => {
     return true;
   };
 
+
+
+
   const handleSendNotification = async () => {
     if (!validateForm()) return;
 
     setSending(true);
 
      
-     const id = recipientId;
+     const id = selectedId;
 
       const payload = {
           title: title, 
@@ -96,19 +118,18 @@ export const NotificationPanel = () => {
           tag: generateTag(), 
           url: url, 
           color: color,
-          urgent: urgent,
           count: count, 
           metadata: metadata
       };
 
-      const body = { ids: [id], payload, pushType: 'single'};
+      const request = { ids: [id], payload, pushType: notificationType};
       
-      console.log(body, [id], 'single')
+ 
 
-      const response = await fetch('http://localhost:7000/push/send', {
+      const response = await fetch('http://98.93.193.4:7000/push/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          body: JSON.stringify(request)
       });
 
     
@@ -129,216 +150,242 @@ export const NotificationPanel = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Formulário */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuração da Notificação</CardTitle>
-            <CardDescription>Preencha os campos abaixo para criar sua notificação</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Tipo de Notificação */}
-            <div className="space-y-2">
-              <Label htmlFor="type">Tipo de Notificação *</Label>
-              <Select value={notificationType} onValueChange={(value: "single" | "broadcast") => setNotificationType(value)}>
-                <SelectTrigger id="type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="single">Single (Um destinatário)</SelectItem>
-                  <SelectItem value="broadcast">Broadcast (Todos)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        
 
-            {/* ID do Destinatário */}
-            {notificationType === "single" && (
-              <div className="space-y-2">
-                <Label htmlFor="recipientId">ID do Destinatário *</Label>
-                <Input
-                  id="recipientId"
-                  placeholder="Ex: user-123"
-                  value={recipientId}
-                  onChange={(e) => setRecipientId(e.target.value)}
-                />
-              </div>
-            )}
+            {(!subs || Object.keys(subs).length === 0) ? (
+                    <Card>
+                    <CardHeader >
+                      <CardTitle>
+                        Nenhum usuário registrado
+                      </CardTitle>
+                      <CardDescription>
+                        Nenhum usuário está registrado para receber notificações.
+                        <br />
+                        Vá até <strong>User Profile</strong> para aceitar notificações.
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+            ) : ( <Card>
+                    <CardHeader>
+                      <CardTitle>Configuração da Notificação</CardTitle>
+                      <CardDescription>Preencha os campos abaixo para criar sua notificação</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Tipo de Notificação */}
+                      <div className="space-y-2">
+                        <Label htmlFor="type">Tipo de Notificação *</Label>
+                        <Select value={notificationType} onValueChange={(value: "single" | "broadcast" | "urgent") => setNotificationType(value)}>
+                          <SelectTrigger id="type">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="single">Single (Um destinatário)</SelectItem>
+                            <SelectItem value="broadcast">Broadcast (Todos)</SelectItem>
+                            <SelectItem value="urgent">Urgente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-            {/* Título */}
-            <div className="space-y-2">
-              <Label htmlFor="title">Título *</Label>
-              <Input
-                id="title"
-                placeholder="Ex: Nova mensagem"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                maxLength={60}
-              />
-              <p className="text-xs text-muted-foreground">{title.length}/60 caracteres</p>
-            </div>
+                      {/* ID do Destinatário */}
+                      {notificationType === "single" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="userId">Destinatário *</Label>
+                          <Select
+                            value={selectedId}
+                            onValueChange={(value: string) => setSelectedId(value)}
+                          >
+                            <SelectTrigger id="userId">
+                              <SelectValue />
+                            </SelectTrigger>
 
-            {/* Corpo */}
-            <div className="space-y-2">
-              <Label htmlFor="body">Corpo da Mensagem *</Label>
-              <Textarea
-                id="body"
-                placeholder="Ex: Você recebeu uma nova mensagem..."
-                value={subtitle}
-                onChange={(e) => setBody(e.target.value)}
-                rows={3}
-                maxLength={200}
-              />
-              <p className="text-xs text-muted-foreground">{subtitle.length}/200 caracteres</p>
-            </div>
+                            <SelectContent>
+                              {subs && Object.keys(subs).length > 0 ? (
+                                Object.keys(subs).map((id) => (
+                                  <SelectItem key={id} value={id}>
+                                    {id}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="none" disabled>
+                                  Nenhum usuário encontrado
+                                </SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
 
-            {/* Ícone */}
-            <div className="space-y-2">
-              <Label htmlFor="icon">URL do Ícone</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="icon"
-                  placeholder="https://exemplo.com/icone.png"
-                  value={icon}
-                  onChange={(e) => setIcon(e.target.value)}
-                />
-                <Button variant="outline" size="icon" type="button">
-                  <Upload className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+                      {/* Título */}
+                      <div className="space-y-2">
+                        <Label htmlFor="title">Título *</Label>
+                        <Input
+                          id="title"
+                          placeholder="Ex: Nova mensagem"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          maxLength={60}
+                        />
+                        <p className="text-xs text-muted-foreground">{title.length}/60 caracteres</p>
+                      </div>
 
-            {/* Imagem */}
-            <div className="space-y-2">
-              <Label htmlFor="image">URL da Imagem</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="image"
-                  placeholder="https://exemplo.com/imagem.jpg"
-                  value={image}
-                  onChange={(e) => setImage(e.target.value)}
-                />
-                <Button variant="outline" size="icon" type="button">
-                  <Upload className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+                      {/* Corpo */}
+                      <div className="space-y-2">
+                        <Label htmlFor="body">Corpo da Mensagem *</Label>
+                        <Textarea
+                          id="body"
+                          placeholder="Ex: Você recebeu uma nova mensagem..."
+                          value={subtitle}
+                          onChange={(e) => setBody(e.target.value)}
+                          rows={3}
+                          maxLength={200}
+                        />
+                        <p className="text-xs text-muted-foreground">{subtitle.length}/200 caracteres</p>
+                      </div>
 
-            {/* URL de destino */}
-            <div className="space-y-2">
-              <Label htmlFor="url">URL de Destino</Label>
-              <Input
-                id="url"
-                placeholder="https://exemplo.com/destino"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-            </div>
+                      {/* Ícone */}
+                      <div className="space-y-2">
+                        <Label htmlFor="icon">URL do Ícone</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="icon"
+                            placeholder="https://exemplo.com/icone.png"
+                            value={icon}
+                            onChange={(e) => setIcon(e.target.value)}
+                          />
+                          <Button variant="outline" size="icon" type="button">
+                            <Upload className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
 
-            {/* Cor */}
-            <div className="space-y-2">
-              <Label htmlFor="color">Cor</Label>
-              <div className="flex gap-2 items-center">
-                <Input
-                  id="color"
-                  type="color"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="w-20 h-10"
-                />
-                <Input
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  placeholder="#3B82F6"
-                  className="flex-1"
-                />
-              </div>
-            </div>
+                      {/* Imagem */}
+                      <div className="space-y-2">
+                        <Label htmlFor="image">URL da Imagem</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="image"
+                            placeholder="https://exemplo.com/imagem.jpg"
+                            value={image}
+                            onChange={(e) => setImage(e.target.value)}
+                          />
+                          <Button variant="outline" size="icon" type="button">
+                            <Upload className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
 
-            {/* Urgente e Count */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="count">Contagem</Label>
-                <Input
-                  id="count"
-                  type="number"
-                  min="1"
-                  value={count}
-                  onChange={(e) => setCount(Number(e.target.value))}
-                />
-              </div>
+                      {/* URL de destino */}
+                      <div className="space-y-2">
+                        <Label htmlFor="url">URL de Destino</Label>
+                        <Input
+                          id="url"
+                          placeholder="https://exemplo.com/destino"
+                          value={url}
+                          onChange={(e) => setUrl(e.target.value)}
+                        />
+                      </div>
 
-              <div className="flex items-end pb-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Checkbox
-                    id="urgent"
-                    checked={urgent}
-                    onCheckedChange={(checked) => setUrgent(checked as boolean)}
-                  />
-                  <span className="text-sm font-medium">Urgente</span>
-                </label>
-              </div>
-            </div>
+                      {/* Cor */}
+                      <div className="space-y-2">
+                        <Label htmlFor="color">Cor</Label>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            id="color"
+                            type="color"
+                            value={color}
+                            onChange={(e) => setColor(e.target.value)}
+                            className="w-20 h-10"
+                          />
+                          <Input
+                            value={color}
+                            onChange={(e) => setColor(e.target.value)}
+                            placeholder="#3B82F6"
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
 
-            {/* Metadata */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label>Metadata</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addMetadata}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Adicionar
-                </Button>
-              </div>
-              {metadata.map((meta, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input
-                    placeholder="ID"
-                    value={meta.id}
-                    onChange={(e) => updateMetadata(index, "id", e.target.value)}
-                  />
-                  <Input
-                    placeholder="Role"
-                    value={meta.role}
-                    onChange={(e) => updateMetadata(index, "role", e.target.value)}
-                  />
-                  {metadata.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => removeMetadata(index)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
+                      {/* Urgente e Count */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="count">Contagem</Label>
+                          <Input
+                            id="count"
+                            type="number"
+                            min="1"
+                            value={count}
+                            onChange={(e) => setCount(Number(e.target.value))}
+                          />
+                        </div>
+                      </div>
 
-            {/* Botão Enviar */}
-            <Button
-              onClick={handleSendNotification}
-              disabled={sending}
-              className="w-full"
-              size="lg"
-            >
-              {sending ? (
-                <>
-                  <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Enviar Notificação
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+                      {/* Metadata */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label>Metadata</Label>
+                          <Button type="button" variant="outline" size="sm" onClick={addMetadata}>
+                            <Plus className="h-4 w-4 mr-1" />
+                            Adicionar
+                          </Button>
+                        </div>
+                        {metadata.map((meta, index) => (
+                          <div key={index} className="flex gap-2">
+                            <Input
+                              placeholder="ID"
+                              value={meta.id}
+                              onChange={(e) => updateMetadata(index, "id", e.target.value)}
+                            />
+                            <Input
+                              placeholder="Role"
+                              value={meta.role}
+                              onChange={(e) => updateMetadata(index, "role", e.target.value)}
+                            />
+                            {metadata.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                onClick={() => removeMetadata(index)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Botão Enviar */}
+                      <Button
+                        onClick={handleSendNotification}
+                        disabled={sending}
+                        className="w-full"
+                        size="lg"
+                      >
+                        {sending ? (
+                          <>
+                            <div className="h-4 w-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Enviar Notificação
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card> )}
+        
+
+
+
+
 
         {/* Preview */}
         <div className="lg:sticky lg:top-8 lg:self-start">
           <Card>
             <CardHeader>
+        
               <CardTitle>Preview</CardTitle>
               <CardDescription>Veja como sua notificação ficará</CardDescription>
             </CardHeader>
@@ -349,7 +396,7 @@ export const NotificationPanel = () => {
                 icon={icon}
                 image={image}
                 color={color}
-                urgent={urgent}
+                urgent={notificationType === "urgent" ? true : false}
               />
             </CardContent>
           </Card>

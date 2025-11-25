@@ -1,46 +1,99 @@
+
+import { useEffect, useState } from "react";
 import { StatsCard } from "@/components/StatsCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Send, CheckCircle2, Clock, Users, TrendingUp, Bell, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const recentNotifications = [
-  {
-    id: 1,
-    title: "Promoção de Black Friday",
-    type: "broadcast",
-    status: "sent",
-    recipients: "12.5k",
-    timestamp: "5 min atrás",
-  },
-  {
-    id: 2,
-    title: "Atualização de pedido",
-    type: "single",
-    status: "sent",
-    recipients: "1",
-    timestamp: "15 min atrás",
-  },
-  {
-    id: 3,
-    title: "Lembrete de carrinho",
-    type: "single",
-    status: "sent",
-    recipients: "1",
-    timestamp: "1 hora atrás",
-  },
-  {
-    id: 4,
-    title: "Nova funcionalidade",
-    type: "broadcast",
-    status: "sent",
-    recipients: "8.2k",
-    timestamp: "2 horas atrás",
-  },
-];
-
 const Dashboard = () => {
+
+  const [historyData, setHistoryData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalPushes, setTotalPushes] = useState(0);
+  const [totalActiveNotify, setTotalActivesNotify] = useState(0);
+  const [totalActive, setTotalActivesSub] = useState(0);
+  const [totalBroadcast, setTotalBroadcast] = useState(0);
+  const [totalSingle, setTotalSingle] = useState(0);
+  const [totalUrgent, setTotalUrgent] = useState(0);
+
   const navigate = useNavigate();
+
+useEffect(() => {
+  const fetchHistory = async () => {
+    try {
+      // Busca os pushes
+      const res = await fetch("http://98.93.193.4:7000/pushes/get");
+      const data = await res.json();
+
+      // Busca as subscriptions
+      const resSub = await fetch("http://98.93.193.4:7001/subscriptions/list");
+      const dataSub = await resSub.json(); // Corrigido: resSub.json() em vez de res.json()
+
+      let usersCount = Object.values(dataSub).length;
+      let pushesCount = data.length;
+   
+      let broadcastCount = 0;
+      let singleCount = 0;
+      let urgentCount = 0;
+
+      // Converte os valores do objeto em um array
+      // Converte o objeto em array
+        const subArray: any = Object.values(dataSub);
+
+        // Contagem de notifyActive
+        const activeNotifyCount = subArray.filter(sub => sub.notifyActive).length;
+
+        // Contagem de subscriptions ativas
+        const activeSubsCount = subArray.reduce((total, sub) => {
+          return total + sub.subscriptions.filter(s => s.active).length;
+        }, 0);
+
+      data.forEach(item => {
+        // Tipo de push
+        if (item.pushType === "broadcast") broadcastCount += 1;
+        if (item.pushType === "single") singleCount += 1;
+        if (item.pushType === "urgent") urgentCount += 1;
+
+      });
+
+      setTotalUsers(usersCount)
+
+      setTotalPushes(pushesCount);
+      setTotalActivesNotify(activeNotifyCount);
+      setTotalActivesSub(activeSubsCount)
+
+      setTotalBroadcast(broadcastCount);
+      setTotalSingle(singleCount);
+      setTotalUrgent(urgentCount);
+
+      // Formata os dados para a tabela
+      const formattedData = data.map((item) => ({
+        id: item.id,
+        title: item.payload.title,
+        status: item.subscription ? "delivered" : "failed",
+        recipients: item.payload.metadata?.length || 0,
+        clicks: 0,
+        ctr: item.payload.metadata?.length
+          ? `${Math.round((item.payload.count / item.payload.metadata.length) * 100)}%`
+          : "0%",
+        timestamp: item.payload.timestamp
+          ? new Date(item.payload.timestamp).toLocaleString()
+          : "-",
+        type: item.pushType || "single"
+      }));
+
+      setHistoryData(formattedData);
+      setLoading(false);
+    } catch (error) {
+      console.error("Erro ao buscar histórico:", error);
+      setLoading(false);
+    }
+  };
+
+  fetchHistory();
+}, []);
 
   return (
     <div className="p-6 space-y-6">
@@ -62,31 +115,31 @@ const Dashboard = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Enviado (Hoje)"
-          value="2,345"
+          value={totalPushes} 
           change="+12.5% vs ontem"
           changeType="positive"
           icon={Bell}
           iconColor="text-primary"
         />
         <StatsCard
-          title="Taxa de Entrega"
-          value="98.5%"
+          title="Total de usuarios ativos"
+          value={totalActiveNotify} 
           change="+2.1% vs semana passada"
           changeType="positive"
           icon={CheckCircle2}
           iconColor="text-success"
         />
         <StatsCard
-          title="Taxa de Cliques"
-          value="24.8%"
+          title="Tolta de dispositivos ativos"
+          value={totalActive} 
           change="-1.2% vs semana passada"
           changeType="negative"
           icon={TrendingUp}
           iconColor="text-primary"
         />
         <StatsCard
-          title="Usuários Ativos"
-          value="18.2k"
+          title="Usuários"
+          value={totalUsers}
           change="+3.4% vs mês passado"
           changeType="positive"
           icon={Users}
@@ -128,9 +181,9 @@ const Dashboard = () => {
           <CardContent>
             <div className="space-y-4">
               {[
-                { label: "Broadcast", value: 78, color: "bg-primary" },
-                { label: "Single", value: 92, color: "bg-success" },
-                { label: "Urgente", value: 95, color: "bg-destructive" },
+                { label: "Broadcast", value:  Math.floor((totalBroadcast / historyData.length) * 100), color: "bg-primary" },
+                { label: "Single", value: Math.floor((totalSingle / historyData.length) * 100), color: "bg-success" },
+                { label: "Urgente", value: Math.floor((totalUrgent / historyData.length) * 100), color: "bg-destructive" },
               ].map((item) => (
                 <div key={item.label} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
@@ -166,9 +219,9 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentNotifications.map((notification) => (
+            {historyData.map((notification, index) => (
               <div
-                key={notification.id}
+                key={index}
                 className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors"
               >
                 <div className="flex items-center gap-4">
