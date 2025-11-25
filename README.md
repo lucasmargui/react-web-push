@@ -241,6 +241,11 @@ git clone https://github.com/your-username/your-repo.git
 cd your-repo/app
 npm install
 ```
+Inside the react-web-push/app/ run: 
+
+```bash
+npm install
+```
 
 > This installs all dependencies required to build the project.
 
@@ -248,7 +253,7 @@ npm install
 
 ## 10. Build React App
 
-Run the build command to generate the production-ready files in `dist/`:
+Inside the react-web-push/app/ run the build command to generate the production-ready files in `dist/`:
 
 ```bash
 npm run build
