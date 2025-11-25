@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./dist:/usr/share/nginx/html
+      - ./certs:/etc/letsencrypt
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certs:/etc/letsencrypt
+    command: certonly --webroot --webroot-path=/usr/share/nginx/html -d main-domain-example.online --email lucasmartinsgui@email.com --agree-tos --non-interactive
