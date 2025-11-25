@@ -80,6 +80,14 @@ ssh -i your-key.pem ubuntu@your-ec2-ip
 sudo apt update && sudo apt upgrade -y
 ```
 
+4. Install Docker using the official installation script:
+
+```
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+```
+
+
 ## 5. Docker Compose Configuration
 
 Create `docker-compose.yml` in the project root:
