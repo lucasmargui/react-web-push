@@ -134,15 +134,57 @@ services:
 Update `nginx/default.conf` with your server and SSL settings. Example:
 
 ```nginx
+# Inclui os tipos MIME padrão
+include /etc/nginx/mime.types;
+default_type application/octet-stream;
+
+# Redireciona HTTP para HTTPS
 server {
     listen 80;
-    server_name your-domain.com www.your-domain.com;
+    server_name main-domain-example.online www.main-domain-example.online;
 
+    # Redireciona todas as requisições para HTTPS
     location / {
-        root /usr/share/nginx/html;
-        index index.html;
+        return 301 https://$host$request_uri;
     }
 }
+
+# Servidor HTTPS
+server {
+    listen 443 ssl http2;
+    server_name main-domain-example.online www.main-domain-example.online;
+
+    # Certificados SSL Let's Encrypt
+    ssl_certificate /etc/letsencrypt/live/main-domain-example.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/main-domain-example.online/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Diretório do build do React
+    root /usr/share/nginx/html;
+    index index.html index.htm;
+
+    # SPA fallback
+    location / {
+        try_files $uri /index.html;
+    }
+
+    # Cache de arquivos estáticos e garantia de MIME type correto
+    location ~* \.(?:css|js|mjs|json|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|ico)$ {
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public";
+    }
+
+    # Evita servir arquivos ocultos como .env ou .git
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+}
+
 ```
 
 ## 7. Push to Git
