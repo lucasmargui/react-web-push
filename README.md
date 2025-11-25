@@ -1,6 +1,6 @@
 # React/Vite Deployment Tutorial with Docker, Nginx, and SSL
 
-This tutorial will guide you step-by-step through deploying a React/Vite project on an EC2 instance using Docker, Nginx, and Certbot for SSL certificates.
+This tutorial provides detailed step-by-step instructions to deploy a React/Vite project on an EC2 instance using Docker, Nginx, and Certbot for SSL certificates. Each step includes examples to make the process clear.
 
 ---
 
@@ -10,18 +10,21 @@ This tutorial will guide you step-by-step through deploying a React/Vite project
 2. [Project Structure](#project-structure)
 3. [React/Vite App Setup](#reactvite-app-setup)
 4. [EC2 Instance Setup](#ec2-instance-setup)
-5. [Docker Compose Configuration](#docker-compose-configuration)
-6. [Nginx Configuration](#nginx-configuration)
-7. [Push to Git](#push-to-git)
-8. [Deploy on EC2](#deploy-on-ec2)
-9. [Build React App](#build-react-app)
-10. [Start Docker Containers](#start-docker-containers)
-11. [Generate SSL Certificates](#generate-ssl-certificates)
-12. [Restart Docker Containers](#restart-docker-containers)
+5. [Install Docker on EC2](#install-docker-on-ec2)
+6. [Docker Compose Configuration](#docker-compose-configuration)
+7. [Nginx Configuration](#nginx-configuration)
+8. [Push to Git](#push-to-git)
+9. [Deploy on EC2](#deploy-on-ec2)
+10. [Build React App](#build-react-app)
+11. [Start Docker Containers](#start-docker-containers)
+12. [Generate SSL Certificates](#generate-ssl-certificates)
+13. [Restart Docker Containers](#restart-docker-containers)
 
 ---
 
 ## 1. Git Repository Setup
+
+Git is used for version control and makes it easier to deploy projects to remote servers.
 
 1. Create a new repository on GitHub (or any Git provider).
 2. Clone the repository locally:
@@ -31,21 +34,31 @@ git clone https://github.com/your-username/your-repo.git
 cd your-repo
 ```
 
+> Example: `git clone https://github.com/lucas/my-react-vite-app.git`
+
+---
+
 ## 2. Project Structure
 
-Create the following folder structure:
+Organizing your project with a clear structure helps Docker and Nginx find the files correctly.
+
+**Recommended structure:**
 
 ```
 project-root/
 │
-├── app/       # React/Vite application
+├── app/       # React/Vite application code
 ├── nginx/     # Nginx configuration files
-└── docker-compose.yml
+└── docker-compose.yml  # Docker services definition
 ```
+
+> `app/dist` will contain your production-ready files after building.
+
+---
 
 ## 3. React/Vite App Setup
 
-Inside the `app/` folder, ensure you have a valid `package.json` for Vite:
+Inside `app/`, create `package.json`:
 
 ```json
 {
@@ -63,38 +76,50 @@ Inside the `app/` folder, ensure you have a valid `package.json` for Vite:
 }
 ```
 
-> The `build` script is essential for generating the minimal production bundle in the `dist/` folder.
+> `npm run build` will generate a `dist/` folder with optimized files ready for deployment.
+
+---
 
 ## 4. EC2 Instance Setup
 
-1. Launch an EC2 instance with Ubuntu.
-2. Connect to the instance via SSH:
+1. Launch an Ubuntu EC2 instance.
+2. Connect via SSH:
 
 ```bash
 ssh -i your-key.pem ubuntu@your-ec2-ip
 ```
 
-3. Update and upgrade packages:
+3. Update packages:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 ```
 
-4. Install Docker using the official installation script:
+> Example: `ssh -i my-key.pem ubuntu@54.123.45.67`
 
-```
+---
+
+## 5. Install Docker on EC2
+
+Install Docker using the official script:
+
+```bash
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 ```
 
+> This will install Docker and the `docker` command on your EC2 instance. You can verify with `docker --version`.
 
-## 5. Docker Compose Configuration
+---
 
-Create `docker-compose.yml` in the project root:
+## 6. Docker Compose Configuration
+
+Docker Compose simplifies running multiple containers, e.g., Nginx and Certbot, together.
+
+**docker-compose.yml example:**
 
 ```yaml
 version: "3.9"
-
 services:
   nginx:
     image: nginx:alpine
@@ -129,9 +154,13 @@ services:
       "
 ```
 
-## 6. Nginx Configuration
+> This setup maps SSL certificate directories from the host and ensures Certbot renews them automatically.
 
-Update `nginx/default.conf` with your server and SSL settings. Example:
+---
+
+## 7. Nginx Configuration
+
+Update `nginx/default.conf` with your server and SSL settings.
 
 ```nginx
 # Inclui os tipos MIME padrão
@@ -187,32 +216,37 @@ server {
 
 ```
 
-## 7. Push to Git
+> Replace `your-domain.com` with your actual domain.
 
-Once the project is configured, push it to your repository:
+---
+
+## 8. Push to Git
+
+Keep your project on Git for easy deployment.
 
 ```bash
 git add .
-git commit -m "Initial project setup"
+git commit -m "Initial setup with Docker and Nginx"
 git push origin main
 ```
 
-## 8. Deploy on EC2
+---
 
-1. Clone the repository on your EC2 instance:
+## 9. Deploy on EC2
+
+Clone the repository on your EC2 instance and install dependencies:
 
 ```bash
 git clone https://github.com/your-username/your-repo.git
 cd your-repo/app
-```
-
-2. Install dependencies:
-
-```bash
 npm install
 ```
 
-## 9. Build React App
+> This installs all dependencies required to build the project.
+
+---
+
+## 10. Build React App
 
 Run the build command to generate the production-ready files in `dist/`:
 
@@ -220,21 +254,25 @@ Run the build command to generate the production-ready files in `dist/`:
 npm run build
 ```
 
-> This step is critical because Certbot needs to verify the domain by placing temporary files in `dist/`.
+> Example: `dist/index.html` and other static assets are now ready to be served by Nginx.
 
-## 10. Start Docker Containers
+---
 
-From the project root:
+## 11. Start Docker Containers
+
+Start Nginx and Certbot containers to serve your app and handle SSL.
 
 ```bash
 docker compose up -d
 ```
 
-> Nginx may restart repeatedly if SSL certificates are not yet available.
+> Nginx may restart if SSL certificates are missing. This is normal at this stage.
 
-## 11. Generate SSL Certificates
+---
 
-Stop the Nginx container and run Certbot manually to generate SSL certificates:
+## 12. Generate SSL Certificates
+
+Run Certbot manually to create SSL certificates:
 
 ```bash
 sudo docker run -it --rm \
@@ -244,19 +282,21 @@ sudo docker run -it --rm \
   certbot/certbot:latest certonly --standalone -d main-domain-example.online
 ```
 
-Verify that certificates were created in `/etc/letsencrypt/live/main-domain-example.online/`.
+> Check `/etc/letsencrypt/live/main-domain-example.online/` to verify that `fullchain.pem` and `privkey.pem` exist.
 
-## 12. Restart Docker Containers
+---
 
-After SSL certificates are created:
+## 13. Restart Docker Containers
+
+After SSL certificates are in place, restart Docker containers to apply them.
 
 ```bash
 docker compose up -d
 ```
 
-> If there are any volume path changes, remove the old images and rebuild them.
+> If there are issues with volume paths, remove old images and rebuild containers with `docker compose build --no-cache`.
 
 ---
 
-Your React/Vite site is now deployed with Nginx and secured with SSL using Certbot.
+Your React/Vite site is now deployed on EC2 with Nginx and secured with SSL certificates using Certbot.
 
