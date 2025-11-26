@@ -32,7 +32,7 @@ const NotificationBanner = () => {
         }
 
         // Faz a requisição antes de exibir o banner
-        const res = await fetch("https://main-domain-example.online/subscriptions/status", {
+        const res = await fetch("https://main-domain-example.win/subscriptions/status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -79,7 +79,7 @@ async function getOrCreateSubscription(publicVapidKey) {
 
 // Envia dados para o backend
 async function sendSubscriptionToServer({ id, subscription, active }) {
-  const response = await fetch("https://main-domain-example.online/subscriptions/save", {
+  const response = await fetch("https://main-domain-example.win/subscriptions/save", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, subscription, active }),

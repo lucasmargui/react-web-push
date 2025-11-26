@@ -36,7 +36,7 @@ export const NotificationPanel = () => {
   useEffect(() => {
     const loadSubscriptions = async () => {
       try {
-        const res = await fetch("https://main-domain-example.online/subscriptions/list");
+        const res = await fetch("https://main-domain-example.win/subscriptions/list");
         const data = await res.json();
       
         setSubs(data); // array de objetos com { id, ... }
@@ -126,7 +126,7 @@ export const NotificationPanel = () => {
       
  
 
-      const response = await fetch('https://main-domain-example.online/push/send', {
+      const response = await fetch('https://main-domain-example.win/push/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(request)

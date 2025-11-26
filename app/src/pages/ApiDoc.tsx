@@ -8,7 +8,7 @@ const ApiDocumentation = () => {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold mb-2">Endpoint</h2>
         <pre className="bg-gray-100 p-4 rounded text-sm overflow-x-auto">
-          POST https://main-domain-example.online/push/send
+          POST https://main-domain-example.win/push/send
         </pre>
         <p>Content-Type: <strong>application/json</strong></p>
       </section>
@@ -141,7 +141,7 @@ const request = {
   pushType: "single"
 };
 
-const response = await fetch('https://main-domain-example.online/push/send', {
+const response = await fetch('https://main-domain-example.win/push/send', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(request)
