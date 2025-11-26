@@ -23,7 +23,7 @@ const NotificationStatus = () => {
         }
 
         // Consulta o backend
-        const res = await fetch("https://main-domain-example.online:7001/subscriptions/active", {
+        const res = await fetch("https://main-domain-example.online/subscriptions/active", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
