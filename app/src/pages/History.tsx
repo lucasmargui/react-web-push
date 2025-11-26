@@ -13,7 +13,13 @@ const History = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch("https://main-domain-example.win/pushes/get");
+        const res = await fetch("https://main-domain-example.win/pushes/get", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
         const data = await res.json();
 
         const formattedData = data.map(item => ({

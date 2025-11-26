@@ -24,12 +24,25 @@ useEffect(() => {
   const fetchHistory = async () => {
     try {
       // Busca os pushes
-      const res = await fetch("https://main-domain-example.win/pushes/get");
-      const data = await res.json();
+// Busca os pushes
+    const res = await fetch("https://main-domain-example.win/pushes/get", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const data = await res.json();
 
-      // Busca as subscriptions
-      const resSub = await fetch("https://main-domain-example.win/subscriptions/list");
-      const dataSub = await resSub.json(); // Corrigido: resSub.json() em vez de res.json()
+    // Busca as subscriptions
+    const resSub = await fetch("https://main-domain-example.win/subscriptions/list", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    
+const dataSub = await resSub.json(); // Corrigido: resSub.json() em vez de res.json()
+
 
       let usersCount = Object.values(dataSub).length;
       let pushesCount = data.length;

@@ -37,7 +37,12 @@ const UserInfo = () => {
     try {
       const res = await fetch("https://main-domain-example.win/admin/clear-json", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
+
+      const data = await res.json(); // se a resposta for JSON
 
       if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
 

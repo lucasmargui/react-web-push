@@ -36,9 +36,18 @@ export const NotificationPanel = () => {
   useEffect(() => {
     const loadSubscriptions = async () => {
       try {
-        const res = await fetch("https://main-domain-example.win/subscriptions/list");
+        const res = await fetch("https://main-domain-example.win/subscriptions/list", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!res.ok) {
+          throw new Error(`Erro HTTP! status: ${res.status}`);
+        }
+
         const data = await res.json();
-      
         setSubs(data); // array de objetos com { id, ... }
       } catch (error) {
         console.error("Erro ao carregar subscriptions:", error);
@@ -126,11 +135,23 @@ export const NotificationPanel = () => {
       
  
 
-      const response = await fetch('https://main-domain-example.win/push/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(request)
-      });
+     try {
+        const response = await fetch("https://main-domain-example.win/push/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(request),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erro HTTP! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Resposta do backend:", data);
+      } catch (error) {
+        console.error("Erro ao enviar push:", error);
+      }
+
 
     
 
