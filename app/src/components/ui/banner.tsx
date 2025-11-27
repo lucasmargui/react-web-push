@@ -23,47 +23,16 @@ const NotificationBanner = ({setActive}) => {
   useEffect(() => {
 
 
-      const checkSubscription = async () => {
-        try {
-          // Aguarda o service worker estar pronto
-          const registration = await navigator.serviceWorker.ready;
-
-          // Verifica se já existe uma subscription
-          let subscription = await registration.pushManager.getSubscription();
-
-          if (!subscription) {
-            // Tenta criar uma nova subscription
-            subscription = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
-            });
-
-            // Atualiza estado se a subscription foi criada
-            setVisible(true);
-          }
-
-          // Retorna a subscription criada ou existente
-          return { success: true, subscription };
-
-        } catch (error) {
-          console.error("[Push Notification] Erro ao verificar ou criar subscription:", error);
-          // Retorna falha sem subscription
-          return { success: false, subscription: null, message: "Não foi possível ativar notificações." };
-        }
-      };
-
-
-
     const showBanner = async () => {
 
         const subscription = await getSubscription();
-        
-        const res = await fetch("https://main-domain-example.win/subscriptions/showBanner", {
+       
+        const res = await fetch("http://localhost:7000/subscriptions/showBanner", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: userId,
-            endpoint: subscription.endpoint,
+            endpoint: subscription ? subscription.endpoint : null,
           }),
         });
 
@@ -74,18 +43,7 @@ const NotificationBanner = ({setActive}) => {
 
       const init = async () => {
         try {
-          // Verifica ou cria a subscription
-          const { success, subscription, message } = await checkSubscription();
-
-          if (!success || !subscription) {
-              console.warn("[Init] " + message);
-                toast({
-                title: "Erro ao registrar",
-                  description: "Não foi possível registrar o navegador para receber notificações via Service Worker.",
-                  variant: "destructive",
-                });
-              return
-         }
+    
           // Verifica se o banner deve ser exibido
           const result = await showBanner();
 
@@ -100,7 +58,7 @@ const NotificationBanner = ({setActive}) => {
           toast({
             title: "Erro ao verificar banner",
             description:
-              "Não foi possível verificar se o banner deve ser exibido. Por favor, tente novamente.",
+              `Não foi possível verificar se o banner deve ser exibido. Por favor, tente novamente.${error}`,
             variant: "destructive",
           });
         }
@@ -121,12 +79,22 @@ async function getSubscription() {
   const registration = await navigator.serviceWorker.ready;
   let subscription = await registration.pushManager.getSubscription();
 
+  if(!subscription){
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+    });
+  }
+
   return subscription;
 }
 
 // Envia subscription para o backend
 async function sendSubscriptionToServer({ id, subscription, active }) {
-  const response = await fetch("https://main-domain-example.win/subscriptions/save", {
+
+  console.log(id, subscription, active)
+
+  const response = await fetch("http://localhost:7000/subscriptions/save", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, subscription, active }),

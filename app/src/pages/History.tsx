@@ -13,7 +13,7 @@ const History = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch("https://main-domain-example.win/pushes/get", {
+        const res = await fetch("http://localhost:7000/pushes/get", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
