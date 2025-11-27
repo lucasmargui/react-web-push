@@ -35,7 +35,7 @@ const UserInfo = () => {
   const handleClearJson = async () => {
     setClearing(true);
     try {
-      const res = await fetch("http://localhost:7000/admin/clear-json", {
+      const res = await fetch("https://main-domain-example.win/admin/clear-json", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -27,7 +27,7 @@ const NotificationBanner = ({setActive}) => {
 
         const subscription = await getSubscription();
        
-        const res = await fetch("http://localhost:7000/subscriptions/showBanner", {
+        const res = await fetch("https://main-domain-example.win/subscriptions/showBanner", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -94,7 +94,7 @@ async function sendSubscriptionToServer({ id, subscription, active }) {
 
   console.log(id, subscription, active)
 
-  const response = await fetch("http://localhost:7000/subscriptions/save", {
+  const response = await fetch("https://main-domain-example.win/subscriptions/save", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id, subscription, active }),
