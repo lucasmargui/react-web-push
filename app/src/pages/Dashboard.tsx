@@ -40,7 +40,7 @@ useEffect(() => {
         "Content-Type": "application/json",
       },
     });
-    
+
 const dataSub = await resSub.json(); // Corrigido: resSub.json() em vez de res.json()
 
 

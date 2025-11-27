@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, BellOff } from "lucide-react";
 
-const NotificationStatus = () => {
+const NotificationStatus = ({active, setActive}) => {
   const [visible, setVisible] = useState(false);
-  const [active, setActive] = useState(null); // null = carregando
-  
+ 
   const userId = 'user-1';
 
   useEffect(() => {
@@ -34,7 +33,7 @@ const NotificationStatus = () => {
 
         const result = await res.json();
 
-        console.log("🔍 Status vindo do backend:", result);
+       
 
         // Armazena o valor vindo do backend (true ou false)
         setActive(result.active === true);

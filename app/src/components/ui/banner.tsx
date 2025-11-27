@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
+
+const PUBLIC_VAPID_KEY = "BNyR2VIokuew2M6DO_rVgVdJmqJwiG69i4jzMiLOtw-Eyf3UGuJLONEgdycUB6lwksnfS9dl4zgkvnpcOO4X4WA";
+
 // Função auxiliar para converter VAPID key
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -9,11 +12,11 @@ function urlBase64ToUint8Array(base64String) {
   return new Uint8Array([...rawData].map(char => char.charCodeAt(0)));
 }
 
-const NotificationBanner = () => {
+const NotificationBanner = ({setActive}) => {
   const { toast } = useToast();
 
   const [visible, setVisible] = useState(false);
- 
+  const [permission, setPermission] = useState<"granted" | "denied" | "default">("default");
 
   const userId = 'user-1';
 
@@ -21,18 +24,27 @@ const NotificationBanner = () => {
 
     const checkAndShowBanner = async () => {
       try {
+
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
 
         // Se não existir subscription, já mostra o banner
         if (!subscription) {
-          console.warn("Nenhuma subscription encontrada → exibindo banner.");
+
+          console.warn("Notificação no navegador não registrada → exibindo banner.");
+
+          const pushManager = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
+          });
+
+         
           setVisible(true);
           return;
         }
 
         // Faz a requisição antes de exibir o banner
-        const res = await fetch("https://main-domain-example.win/subscriptions/status", {
+        const res = await fetch("https://main-domain-example.win/subscriptions/showBanner", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -45,8 +57,13 @@ const NotificationBanner = () => {
 
         // Se o backend mandar exibir
         if (result.showBanner === true) {
+          setPermission("denied")
           const timer = setTimeout(() => setVisible(true), 500);
           return () => clearTimeout(timer);
+        }
+
+        if (result.showBanner === false) {
+          setPermission("granted")
         }
       } catch (error) {
         console.error("Erro ao verificar banner:", error);
@@ -58,26 +75,20 @@ const NotificationBanner = () => {
   }, [userId]);
 
   
-// ----------------------
-// Funções auxiliares
-// ----------------------
 
-// Carrega ou cria uma subscription push
-async function getOrCreateSubscription(publicVapidKey) {
+  // Cria ou retorna a subscription existente
+async function getSubscription() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    throw new Error("Service Worker ou Push não suportados neste navegador.");
+  }
+
   const registration = await navigator.serviceWorker.ready;
   let subscription = await registration.pushManager.getSubscription();
-
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
-    });
-  }
 
   return subscription;
 }
 
-// Envia dados para o backend
+// Envia subscription para o backend
 async function sendSubscriptionToServer({ id, subscription, active }) {
   const response = await fetch("https://main-domain-example.win/subscriptions/save", {
     method: "POST",
@@ -85,93 +96,128 @@ async function sendSubscriptionToServer({ id, subscription, active }) {
     body: JSON.stringify({ id, subscription, active }),
   });
 
+  if (!response.ok) {
+    throw new Error(`Erro ao enviar subscription: ${response.statusText}`);
+  }
+
   return response.json();
 }
 
-
-
-  // ----------------------
-  // Handlers (limpos)
-  // ----------------------
-
-  const handleYes = async () => {
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") return;
-
-      const publicVapidKey =
-        "BNyR2VIokuew2M6DO_rVgVdJmqJwiG69i4jzMiLOtw-Eyf3UGuJLONEgdycUB6lwksnfS9dl4zgkvnpcOO4X4WA";
-
-      const subscription = await getOrCreateSubscription(publicVapidKey);
-
-      const data = await sendSubscriptionToServer({
-        id: userId,
-        subscription,
-        active: true,
-      });
-
-      console.log("Response do servidor (YES):", data);
-       
+// ----------------------
+// Handlers
+// ----------------------
+// ----------------------
+// Ativar notificações
+// ----------------------
+async function handleEnableNotifications() {
+  try {
+    // 1️⃣ Verifica se o navegador suporta notificações
+    if (!('Notification' in window)) {
       toast({
-        title: "Success!",
-        description: "Notificação ativada",
-        variant: "default",
-      });
-
-
-
-
-    } catch (error) {
-      console.error("Erro no handleYes:", error);
-      toast({
-        title: "Erro ao processar sua solicitação.",
-        description: error.message,
+        title: "Erro",
+        description: "Notificações não suportadas neste navegador.",
         variant: "destructive",
       });
-    } finally {
-      setVisible(false);
-      location.reload()
+      return;
     }
-  };
 
-  
+    // 2️⃣ Checa o estado atual da permissão
+    let permission = Notification.permission;
 
+    switch (permission) {
+      case "granted":
+        console.log("[Notification Service] Permissão já concedida.");
+        break;
 
-  const handleNo = async () => {
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") return;
+      case "denied":
+        toast({
+          title: "Permissão negada",
+          description:
+            "Você negou notificações anteriormente. Habilite manualmente nas configurações do navegador.",
+          variant: "destructive",
+        });
+        return;
 
-      const publicVapidKey =
-        "BNyR2VIokuew2M6DO_rVgVdJmqJwiG69i4jzMiLOtw-Eyf3UGuJLONEgdycUB6lwksnfS9dl4zgkvnpcOO4X4WA";
-
-      const subscription = await getOrCreateSubscription(publicVapidKey);
-
-      const data = await sendSubscriptionToServer({
-        id: userId,
-        subscription,
-        active: false,
-      });
-
-      console.log("Response do servidor (NO):", data);
-      toast({
-        title: "Success!",
-        description: "Notificação desativada!",
-        variant: "destructive",
-      });
-
-    } catch (error) {
-      console.error("Erro no handleNo:", error);
-      toast({
-        title: "Erro ao processar sua solicitação.",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setVisible(false);
-      location.reload()
+      case "default":
+        // Solicita permissão
+        permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          toast({
+            title: "Permissão não concedida",
+            description: "Você precisa permitir notificações para continuar.",
+            variant: "destructive",
+          });
+          return;
+        }
+        break;
     }
-  };
+
+    // 3️⃣ Se chegou aqui, permissão está concedida
+    const subscription = await getSubscription();
+    const data = await sendSubscriptionToServer({
+      id: userId,
+      subscription,
+      active: true,
+    });
+
+    console.log("Response do servidor:", data);
+
+    toast({
+      title: "Success!",
+      description: "Notificação ativada",
+      variant: "default",
+    });
+
+    setActive(true)
+
+  } catch (error) {
+    console.error("Erro ao ativar notificações:", error);
+    toast({
+      title: "Erro ao processar sua solicitação",
+      description: error.message,
+      variant: "destructive",
+    });
+  } finally {
+    setVisible(false);
+  }
+}
+// ----------------------
+// Desativar notificações
+// ----------------------
+async function handleDisableNotifications() {
+  try {
+    if (!('Notification' in window)) {
+      throw new Error("Notificações não suportadas neste navegador.");
+    }
+
+    // Não precisa solicitar permissão, só desativar
+    const subscription = await getSubscription();
+
+    const data = await sendSubscriptionToServer({
+      id: userId,
+      subscription,
+      active: false,
+    });
+
+    console.log("Response do servidor (NO):", data);
+
+    toast({
+      title: "Success!",
+      description: "Notificação desativada",
+      variant: "destructive",
+    });
+  } catch (error) {
+    console.error("Erro ao desativar notificações:", error);
+    toast({
+      title: "Erro ao processar sua solicitação.",
+      description: error.message,
+      variant: "destructive",
+    });
+  } finally {
+    setVisible(false);
+    location.reload();
+  }
+}
 
 
   return (
@@ -185,13 +231,13 @@ async function sendSubscriptionToServer({ id, subscription, active }) {
       <div className="flex gap-3">
         <button
           className="px-4 py-2 font-semibold rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-          onClick={handleYes}
+          onClick={() => handleEnableNotifications()}
         >
           Sim
         </button>
         <button
           className="px-4 py-2 font-semibold rounded-lg bg-gray-300 text-gray-900 hover:bg-gray-400 transition-colors"
-          onClick={handleNo}
+          onClick={() => handleDisableNotifications()}
         >
           Não
         </button>

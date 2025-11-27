@@ -5,7 +5,7 @@ import { User, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import NotificationBanner from "@/components/ui/banner";
+
 
 const UserInfo = () => {
 
@@ -77,7 +77,7 @@ const UserInfo = () => {
   // ======================
   return (
     <div className="flex min-h-screen items-center justify-center p-6 bg-gray-50">
-      <NotificationBanner />
+      
 
       <motion.div
         initial={{ opacity: 0, y: 40 }}

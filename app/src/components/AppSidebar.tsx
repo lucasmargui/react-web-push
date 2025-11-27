@@ -1,6 +1,6 @@
 import { LayoutDashboard, Send, History, Settings, Bell, User } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import  NotificationStatus from "@/components/ui/status-active";
+
 import { useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -14,6 +14,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+import NotificationStatus from "@/components/ui/status-active";
+
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -24,7 +26,7 @@ const items = [
   { title: "Api", url: "/api", icon: User }
 ];
 
-export function AppSidebar() {
+export function AppSidebar({active, setActive}) {
   const { open } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
@@ -36,7 +38,6 @@ export function AppSidebar() {
 
   return (
     <Sidebar className={open ? "w-60" : "w-14"} collapsible="icon">
-      <NotificationStatus/>
       <SidebarContent>
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2">
@@ -51,6 +52,7 @@ export function AppSidebar() {
             )}
           </div>
         </div>
+        <NotificationStatus active={active} setActive={setActive}/>
 
         <SidebarGroup>
           <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>

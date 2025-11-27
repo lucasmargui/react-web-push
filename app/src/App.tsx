@@ -11,7 +11,7 @@ import History from "./pages/History";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import UserProfile from "./pages/UserProfile";
-import { registerWorker } from "../public/serviceWorkerRegister.js"; // função ajustada
+import { registerWorker } from "../public/registerServiceWorker.js"; // função ajustada
 import { useToast } from "@/hooks/use-toast";
 import { CustomToastContainer } from "@/components/ui/custom-toast-container.js";
 

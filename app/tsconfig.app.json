@@ -26,5 +26,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "public/sw.js", "public/serviceWorkerRegister.js"]
+  "include": ["src", "public/sw.js", "public/registerServiceWorker.js"]
 }

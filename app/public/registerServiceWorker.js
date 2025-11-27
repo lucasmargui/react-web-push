@@ -1,14 +1,7 @@
 
-export async function registerWorker(toast) {
+export async function registerWorker() {
     if ('serviceWorker' in navigator && 'Notification' in window) {
         try {
-            // Solicita permissão de notificações
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                console.warn('Permissão de notificações negada.');
-                return;
-            }
-
             // Registra o Service Worker
             const sw = await navigator.serviceWorker.register('sw.js');
             console.log('Service Worker registrado:', sw);
