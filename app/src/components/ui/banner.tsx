@@ -16,34 +16,48 @@ const NotificationBanner = ({setActive}) => {
   const { toast } = useToast();
 
   const [visible, setVisible] = useState(false);
-  const [permission, setPermission] = useState<"granted" | "denied" | "default">("default");
+  const [permission, setPermission] = useState<"on" | "off" | "default">("default");
 
   const userId = 'user-1';
 
   useEffect(() => {
 
-    const checkAndShowBanner = async () => {
-      try {
 
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
+      const checkSubscription = async () => {
+        try {
+          // Aguarda o service worker estar pronto
+          const registration = await navigator.serviceWorker.ready;
 
-        // Se não existir subscription, já mostra o banner
-        if (!subscription) {
+          // Verifica se já existe uma subscription
+          let subscription = await registration.pushManager.getSubscription();
 
-          console.warn("Notificação no navegador não registrada → exibindo banner.");
+          if (!subscription) {
+            // Tenta criar uma nova subscription
+            subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
+            });
 
-          const pushManager = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
-          });
+            // Atualiza estado se a subscription foi criada
+            setVisible(true);
+          }
 
-         
-          setVisible(true);
-          return;
+          // Retorna a subscription criada ou existente
+          return { success: true, subscription };
+
+        } catch (error) {
+          console.error("[Push Notification] Erro ao verificar ou criar subscription:", error);
+          // Retorna falha sem subscription
+          return { success: false, subscription: null, message: "Não foi possível ativar notificações." };
         }
+      };
 
-        // Faz a requisição antes de exibir o banner
+
+
+    const showBanner = async () => {
+
+        const subscription = await getSubscription();
+        
         const res = await fetch("https://main-domain-example.win/subscriptions/showBanner", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -53,24 +67,46 @@ const NotificationBanner = ({setActive}) => {
           }),
         });
 
+
         const result = await res.json();
+        return result;
+    }
 
-        // Se o backend mandar exibir
-        if (result.showBanner === true) {
-          setPermission("denied")
-          const timer = setTimeout(() => setVisible(true), 500);
-          return () => clearTimeout(timer);
+      const init = async () => {
+        try {
+          // Verifica ou cria a subscription
+          const { success, subscription, message } = await checkSubscription();
+
+          if (!success || !subscription) {
+              console.warn("[Init] " + message);
+                toast({
+                title: "Erro ao registrar",
+                  description: "Não foi possível registrar o navegador para receber notificações via Service Worker.",
+                  variant: "destructive",
+                });
+              return
+         }
+          // Verifica se o banner deve ser exibido
+          const result = await showBanner();
+
+          if (result.showBanner === true) {
+            // Exibe o banner com delay
+            const timer = setTimeout(() => setVisible(true), 500);
+            return () => clearTimeout(timer);
+          }
+
+        } catch (error) {
+          console.error("[Init] Erro ao verificar banner:", error);
+          toast({
+            title: "Erro ao verificar banner",
+            description:
+              "Não foi possível verificar se o banner deve ser exibido. Por favor, tente novamente.",
+            variant: "destructive",
+          });
         }
+      };
 
-        if (result.showBanner === false) {
-          setPermission("granted")
-        }
-      } catch (error) {
-        console.error("Erro ao verificar banner:", error);
-      }
-    };
-
-    checkAndShowBanner()
+    init()
  
   }, [userId]);
 
