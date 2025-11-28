@@ -35,7 +35,7 @@ const UserInfo = () => {
   const handleClearJson = async () => {
     setClearing(true);
     try {
-      const res = await fetch("https://main-domain-example.win/admin/clear-json", {
+      const res = await fetch("http://localhost:7000/admin/clear-json", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -76,121 +76,130 @@ const UserInfo = () => {
   // Componente principal
   // ======================
   return (
-    <div className="flex min-h-screen items-center justify-center p-6 bg-gray-50">
-      
+  <div className="flex min-h-screen items-center justify-center p-8 ">
 
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="w-full max-w-4xl bg-white rounded-3xl shadow-xl border border-gray-200 overflow-hidden"
-      >
-        <div className="grid md:grid-cols-3">
-          {/* ====================== Avatar ====================== */}
-          <div className="flex flex-col items-center justify-center bg-gradient-to-br from-primary/20 to-primary/60 p-10">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 240 }}
-              className="flex items-center justify-center bg-white shadow-inner h-32 w-32 rounded-full"
-            >
-              <User className="h-20 w-20 text-primary" />
-            </motion.div>
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="
+        w-full 
+        max-w-2xl 
+        bg-white/80 
+        backdrop-blur-xl 
+        rounded-3xl 
+        shadow-[0_8px_40px_rgba(0,0,0,0.08)] 
+        border border-white/40 
+        overflow-hidden
+        flex flex-col
+      "
+    >
+      {/* ====================== Avatar TOP ====================== */}
+      <div className="flex flex-col items-center gap-4 p-10 bg-gradient-to-b from-primary/30 to-primary/60 text-white">
 
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-4 text-sm text-white/90"
-            >
-              Perfil do Usuário
-            </motion.p>
-          </div>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 180 }}
+          className="h-36 w-36 rounded-full bg-white shadow-2xl shadow-black/20 flex items-center justify-center"
+        >
+          <User className="h-24 w-24 text-primary" />
+        </motion.div>
 
-          {/* ====================== User Info ====================== */}
-          <div className="md:col-span-2 p-8 space-y-6">
+        <motion.h2
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-xl font-medium tracking-wide text-white/90"
+        >
+          Perfil do Usuário
+        </motion.h2>
+      </div>
 
-            {/* Header + botão limpar */}
-            <div className="flex items-start justify-between">
-              <motion.h1
-                initial={{ x: -10, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className="text-3xl font-bold text-gray-900"
-              >
-                {user.name}
-              </motion.h1>
+      {/* ====================== Informações ====================== */}
+      <div className="p-10 space-y-8">
 
-              <Button
-                variant="destructive"
-                size="sm"
-                className="shadow-md"
-                onClick={handleClearJson}
-                disabled={clearing}
-              >
-                {clearing ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Limpando...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Limpar JSON
-                  </>
-                )}
-              </Button>
-            </div>
+        {/* Header + botão limpar */}
+        <div className="flex items-start justify-between">
+          <motion.h1
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="text-4xl font-bold text-gray-900 leading-tight"
+          >
+            {user.name}
+          </motion.h1>
 
-            {/* Dados do usuário */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
-
-              <InfoItem label="ID" value={user.id} />
-              <InfoItem label="Email" value={user.email} />
-
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-900">Função:</span>
-                <span
-                  className={`px-3 py-1 rounded-full text-white text-xs font-medium ${
-                    user.role === "Administrator"
-                      ? "bg-red-600"
-                      : "bg-blue-600"
-                  }`}
-                >
-                  {user.role}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-gray-900">Status:</span>
-                <span
-                  className={`px-3 py-1 rounded-full text-white text-xs font-medium ${
-                    user.status === "Active"
-                      ? "bg-green-600"
-                      : "bg-gray-400"
-                  }`}
-                >
-                  {user.status}
-                </span>
-              </div>
-
-              <InfoItem label="Entrou em" value={user.joined} />
-              <InfoItem label="Último Login" value={user.lastLogin} />
-            </div>
-
-            {/* Link voltar */}
-            <motion.a
-              href="/"
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              className="inline-block text-primary font-medium hover:underline mt-4"
-            >
-              ← Voltar para Home
-            </motion.a>
-          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            className="shadow-md hover:shadow-lg transition-shadow"
+            onClick={handleClearJson}
+            disabled={clearing}
+          >
+            {clearing ? (
+              <>
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                Limpando...
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Limpar
+              </>
+            )}
+          </Button>
         </div>
-      </motion.div>
-    </div>
-  );
+
+        {/* Dados */}
+        <div className="flex flex-col gap-6 text-gray-700">
+
+          <InfoItem label="ID" value={user.id} />
+          <InfoItem label="Email" value={user.email} />
+
+          {/* Função */}
+          <div className="flex items-center gap-3">
+            <span className="font-semibold text-gray-900">Função:</span>
+            <span
+              className={`
+                px-4 py-1.5 rounded-full text-xs font-semibold text-white
+                ${user.role === "Administrator" ? "bg-red-600" : "bg-blue-600"}
+              `}
+            >
+              {user.role}
+            </span>
+          </div>
+
+          {/* Status */}
+          <div className="flex items-center gap-3">
+            <span className="font-semibold text-gray-900">Status:</span>
+            <span
+              className={`
+                px-4 py-1.5 rounded-full text-xs font-semibold text-white
+                ${user.status === "Active" ? "bg-green-600" : "bg-gray-400"}
+              `}
+            >
+              {user.status}
+            </span>
+          </div>
+
+          <InfoItem label="Entrou em" value={user.joined} />
+          <InfoItem label="Último Login" value={user.lastLogin} />
+        </div>
+
+        {/* Link voltar */}
+        <motion.a
+          href="/"
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="inline-block text-primary font-medium hover:underline pt-4"
+        >
+          ← Voltar para Home
+        </motion.a>
+      </div>
+    </motion.div>
+
+  </div>
+);
+
 };
 
 export default UserInfo;

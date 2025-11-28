@@ -20,6 +20,8 @@ export const NotificationPanel = () => {
   const [subs, setSubs] = useState({});
   const [selectedId, setSelectedId] = useState<string>("");
 
+  const [sendTo, setSendTo] = useState<"users" | "email" | "whats" | "telegram" | "all">("users");
+
   const [title, setTitle] = useState("Teste");
   const [subtitle, setBody] = useState("teste");
   const [icon, setIcon] = useState("img/codigo-qr.png");
@@ -35,7 +37,7 @@ export const NotificationPanel = () => {
   useEffect(() => {
     const loadSubscriptions = async () => {
       try {
-        const res = await fetch("https://main-domain-example.win/subscriptions/list", {
+        const res = await fetch("http://localhost:7000/subscriptions/list", {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -104,63 +106,126 @@ export const NotificationPanel = () => {
       return false;
     }
 
+     if (!sendTo.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "Plataforma de destino é obrigatório.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     return true;
   };
 
 
-
-
-  const handleSendNotification = async () => {
-    if (!validateForm()) return;
-
-    setSending(true);
-
-     
-     const id = selectedId;
-
-      const payload = {
-          title: title, 
-          body: subtitle, 
-          icon: icon, 
-          image: image, 
-          tag: generateTag(), 
-          url: url, 
-          color: color,
-          count: count, 
-          metadata: metadata
-      };
-
-      const request = { ids: [id], payload, pushType: notificationType};
-      
- 
-
-     try {
-        const response = await fetch("https://main-domain-example.win/push/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Erro HTTP! status: ${response.status}`);
+  const getIds = () => {
+    let ids = [];
+  
+      for (let id in subs) {
+        if (subs.hasOwnProperty(id)) {
+          ids.push(id);
         }
-
-        const data = await response.json();
-        console.log("Resposta do backend:", data);
-      } catch (error) {
-        console.error("Erro ao enviar push:", error);
       }
+      return ids
+  }
 
 
-    
+const handleSendNotification = async () => {
+  if (!validateForm()) return;
 
+  setSending(true);
 
+  try {
+    const ids = getTargetIds(notificationType, selectedId);
+    if (ids.length === 0) {
+      throw new Error("Nenhum ID válido foi encontrado.");
+    }
+
+    const payload = buildPayload({
+      sendTo,
+      title,
+      subtitle,
+      icon,
+      image,
+      url,
+      color,
+      notificationType,
+      count,
+      metadata,
+    });
+
+    const requestBody = {
+      ids,
+      payload,
+      pushType: notificationType,
+    };
+
+    const response = await sendPushRequest(requestBody);
+    console.log("Resposta do backend:", response);
+
+  } catch (error) {
+    console.error("Erro ao enviar push:", error);
+
+  } finally {
     setTimeout(() => {
-      console.log("Notificação enviada:", payload);
-
       setSending(false);
     }, 1500);
+  }
+};
+
+/* ------------------------------------------------------
+   Helpers
+------------------------------------------------------- */
+
+// Seleciona os IDs corretos
+function getTargetIds(type, selectedId) {
+  const shouldBroadcast = type === "broadcast" || type === "urgent";
+  return shouldBroadcast ? getIds() : [selectedId];
+}
+
+// Monta o payload da notificação
+function buildPayload({
+  sendTo,
+  title,
+  subtitle,
+  icon,
+  image,
+  url,
+  color,
+  notificationType,
+  count,
+  metadata,
+}) {
+  return {
+    sendTo,
+    title,
+    body: subtitle,
+    icon,
+    image,
+    tag: generateTag(),
+    url,
+    color: notificationType === "urgent" ? "red" : color,
+    count,
+    metadata,
   };
+}
+
+// Faz a requisição para enviar o push
+async function sendPushRequest(data) {
+  const response = await fetch("http://localhost:7000/push/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erro HTTP! status: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -234,6 +299,27 @@ export const NotificationPanel = () => {
                           </Select>
                         </div>
                       )}
+                               
+                      <div className="space-y-2">
+                        <Label htmlFor="type">Plataforma de destino *</Label>
+                        <Select 
+                          value={sendTo} 
+                          onValueChange={(value: "users" | "email" | "whats" | "telegram" | "all") => setSendTo(value)}
+                        >
+                          <SelectTrigger id="type">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos</SelectItem>
+                            <SelectItem value="users">Usuário</SelectItem>
+                            <SelectItem value="email">Email</SelectItem>
+                            <SelectItem value="whats">WhatsApp</SelectItem>
+                            <SelectItem value="telegram">Telegram</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+
 
                       {/* Título */}
                       <div className="space-y-2">

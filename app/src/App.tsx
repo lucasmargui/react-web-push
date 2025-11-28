@@ -14,21 +14,23 @@ import UserProfile from "./pages/UserProfile";
 import { registerWorker } from "../public/registerServiceWorker.js"; // função ajustada
 import { useToast } from "@/hooks/use-toast";
 import { CustomToastContainer } from "@/components/ui/custom-toast-container.js";
-
 import ApiDocumentation  from "./pages/ApiDoc";
 
 const queryClient = new QueryClient();
 
 const App = () => {
+
   const { toast } = useToast();
   // Registrar Service Worker assim que o App carregar
   useEffect(() => {
-    // Se você quiser usar toast do Sonner
- 
+   
     if (toast) {
       registerWorker(toast);
     }
+    
   }, []);
+
+  
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -42,7 +44,7 @@ const App = () => {
             <Route path="/send" element={<DashboardLayout><SendNotification /></DashboardLayout>} />
             <Route path="/history" element={<DashboardLayout><History /></DashboardLayout>} />
             <Route path="/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
-            <Route path="/userprofile" element={<DashboardLayout><UserProfile /></DashboardLayout>} />
+            <Route path="/profile" element={<DashboardLayout><UserProfile /></DashboardLayout>} />
             <Route path="/api" element={<DashboardLayout><ApiDocumentation /></DashboardLayout>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

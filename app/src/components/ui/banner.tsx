@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import  checkBrowser from "@/utils/browserInfo"
 
 
 const PUBLIC_VAPID_KEY = "BNyR2VIokuew2M6DO_rVgVdJmqJwiG69i4jzMiLOtw-Eyf3UGuJLONEgdycUB6lwksnfS9dl4zgkvnpcOO4X4WA";
+
+const safari_web_push_url = "xxxxxxxxxxxxxxxx"
+const safari_web_push_id = "xxxxxxxxxxxxxxxxx"
 
 // Função auxiliar para converter VAPID key
 function urlBase64ToUint8Array(base64String) {
@@ -16,168 +20,231 @@ const NotificationBanner = ({setActive}) => {
   const { toast } = useToast();
 
   const [visible, setVisible] = useState(false);
-  const [permission, setPermission] = useState<"on" | "off" | "default">("default");
+
 
   const userId = 'user-1';
 
-  useEffect(() => {
 
 
-    const showBanner = async () => {
+// ------------------------------------------------------
+// Types
+// ------------------------------------------------------
+type PermissionState = "default" | "denied" | "granted";
 
-        const subscription = await getSubscription();
-       
-        const res = await fetch("https://main-domain-example.win/subscriptions/showBanner", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: userId,
-            endpoint: subscription ? subscription.endpoint : null,
-          }),
-        });
+interface ServerResponse {
+  showBanner?: boolean;
+  success?: boolean;
+  [key: string]: any;
+}
 
+// ------------------------------------------------------
+// Helpers
+// ------------------------------------------------------
+const isSafariBrowser = () => {
+  const isSafari = checkBrowser() === "safari";
+  const supportsSafariPush = typeof window.safari?.pushNotification !== "undefined";
+  return isSafari && supportsSafariPush;
+};
 
-        const result = await res.json();
-        return result;
+const safeJson = async (response: Response) => {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
+
+// ------------------------------------------------------
+// Safari Subscription / Permission
+// ------------------------------------------------------
+async function getSafariSubscription() {
+  return window.safari.pushNotification.permission(safari_web_push_id);
+}
+
+async function getSafariPermission(): Promise<PermissionState> {
+  const sub = await getSafariSubscription();
+  return sub.permission;
+}
+
+// ------------------------------------------------------
+// Generic Browser Subscription / Permission
+// ------------------------------------------------------
+async function getSubscription() {
+  try {
+    const registration = await navigator.serviceWorker.ready;
+
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
+      });
     }
 
-      const init = async () => {
-        try {
-    
-          // Verifica se o banner deve ser exibido
-          const result = await showBanner();
-
-          if (result.showBanner === true) {
-            // Exibe o banner com delay
-            const timer = setTimeout(() => setVisible(true), 500);
-            return () => clearTimeout(timer);
-          }
-
-        } catch (error) {
-          console.error("[Init] Erro ao verificar banner:", error);
-          toast({
-            title: "Erro ao verificar banner",
-            description:
-              `Não foi possível verificar se o banner deve ser exibido. Por favor, tente novamente.${error}`,
-            variant: "destructive",
-          });
-        }
-      };
-
-    init()
- 
-  }, [userId]);
-
-  
-
-  // Cria ou retorna a subscription existente
-async function getSubscription() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    throw new Error("Service Worker ou Push não suportados neste navegador.");
+    return subscription;
+  } catch (error) {
+    console.error("[getSubscription] Error:", error);
+    return null;
   }
+}
 
-  const registration = await navigator.serviceWorker.ready;
-  let subscription = await registration.pushManager.getSubscription();
+function getPermission(): PermissionState {
+  return Notification.permission;
+}
 
-  if(!subscription){
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY)
+// ------------------------------------------------------
+// Extract endpoint (Safari não tem endpoint)
+// ------------------------------------------------------
+function extractEndpoint(subscription: any): string | null {
+  if (!subscription) return null;
+  if ("permission" in subscription) return null; // Safari
+  return subscription.endpoint ?? null;
+}
+
+// ------------------------------------------------------
+// API Requests
+// ------------------------------------------------------
+async function apiPOST(url: string, body: object): Promise<ServerResponse> {
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
-  }
 
-  return subscription;
+    const data = await safeJson(response);
+
+    if (!response.ok) {
+      throw new Error(data?.error || `HTTP ${response.status}`);
+    }
+
+    return data || {};
+  } catch (error) {
+    console.error(`[API ERROR] ${url}:`, error);
+    throw error;
+  }
 }
 
-// Envia subscription para o backend
-async function sendSubscriptionToServer({ id, subscription, active }) {
 
-  console.log(id, subscription, active)
 
-  const response = await fetch("https://main-domain-example.win/subscriptions/save", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, subscription, active }),
+const checkShowBanner = (id: string, subscription: any) => {
+  const endpoint = extractEndpoint(subscription);
+  return apiPOST("http://localhost:7000/subscriptions/showBanner", {
+    id,
+    endpoint,
   });
+};
 
-  if (!response.ok) {
-    throw new Error(`Erro ao enviar subscription: ${response.statusText}`);
-  }
+// ------------------------------------------------------
+// React Effect (Banner)
+// ------------------------------------------------------
+useEffect(() => {
+  if (!userId) return;
 
-  return response.json();
-}
+  let timeoutId: any;
 
-// ----------------------
-// Handlers
-// ----------------------
-// ----------------------
-// Ativar notificações
-// ----------------------
+  const getBrowserSubscription = async () => {
+    try {
+      return isSafariBrowser()
+        ? await getSafariSubscription()
+        : await getSubscription();
+    } catch (err) {
+      console.error("[Subscription] Error:", err);
+      return null;
+    }
+  };
+
+  const init = async () => {
+    try {
+      const subscription = await getBrowserSubscription();
+      const result = await checkShowBanner(userId, subscription);
+
+      if (result?.showBanner) {
+        timeoutId = setTimeout(() => setVisible(true), 500);
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao verificar banner",
+        description: String(error),
+        variant: "destructive",
+      });
+    }
+  };
+
+  init();
+  return () => clearTimeout(timeoutId);
+}, [userId]);
+
+// ------------------------------------------------------
+// Enable Notifications
+// ------------------------------------------------------
 async function handleEnableNotifications() {
   try {
-    // 1️⃣ Verifica se o navegador suporta notificações
-    if (!('Notification' in window)) {
+    if (!("Notification" in window)) {
       toast({
         title: "Erro",
-        description: "Notificações não suportadas neste navegador.",
+        description: "Este navegador não suporta notificações.",
         variant: "destructive",
       });
       return;
     }
 
-    // 2️⃣ Checa o estado atual da permissão
-    let permission = Notification.permission;
+    const safari = isSafariBrowser();
+    const permission: PermissionState = safari
+      ? await getSafariPermission()
+      : getPermission();
 
-    switch (permission) {
-      case "granted":
-        console.log("[Notification Service] Permissão já concedida.");
-        break;
-
-      case "denied":
-        toast({
-          title: "Permissão negada",
-          description:
-            "Você negou notificações anteriormente. Habilite manualmente nas configurações do navegador.",
-          variant: "destructive",
-        });
-        return;
-
-      case "default":
-        // Solicita permissão
-        permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-          toast({
-            title: "Permissão não concedida",
-            description: "Você precisa permitir notificações para continuar.",
-            variant: "destructive",
-          });
-          return;
-        }
-        break;
+    // ---- Permission Handling ----
+    if (permission === "denied") {
+      toast({
+        title: "Permissão negada",
+        description:
+          "Você negou notificações. Habilite manualmente nas configurações do navegador.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    // 3️⃣ Se chegou aqui, permissão está concedida
-    const subscription = await getSubscription();
-    const data = await sendSubscriptionToServer({
+    if (permission === "default") {
+      if (safari) {
+        await new Promise((resolve) => {
+          window.safari.pushNotification.requestPermission(
+            safari_web_push_url,
+            safari_web_push_id,
+            {},
+            resolve
+          );
+        });
+      } else {
+        await Notification.requestPermission();
+      }
+    }
+
+    // ---- Get final subscription ----
+    const subscription = safari
+      ? await getSafariSubscription()
+      : await getSubscription();
+
+ 
+
+    const data = await apiPOST("http://localhost:7000/subscriptions/save",{
       id: userId,
       subscription,
       active: true,
     });
 
-    console.log("Response do servidor:", data);
+    console.log("Server Response:", data);
 
     toast({
-      title: "Success!",
-      description: "Notificação ativada",
-      variant: "default",
+      title: "Notificações ativadas",
+      description: "Tudo certo! Você receberá alertas.",
     });
 
-    setActive(true)
-
-  } catch (error) {
-    console.error("Erro ao ativar notificações:", error);
+    setActive(true);
+  } catch (error: any) {
+    console.error("Enable error:", error);
     toast({
-      title: "Erro ao processar sua solicitação",
+      title: "Erro ao ativar notificações",
       description: error.message,
       variant: "destructive",
     });
@@ -185,43 +252,47 @@ async function handleEnableNotifications() {
     setVisible(false);
   }
 }
-// ----------------------
-// Desativar notificações
-// ----------------------
+
+// ------------------------------------------------------
+// Disable Notifications
+// ------------------------------------------------------
 async function handleDisableNotifications() {
   try {
-    if (!('Notification' in window)) {
-      throw new Error("Notificações não suportadas neste navegador.");
+    if (!("Notification" in window)) {
+      throw new Error("Notificações não são suportadas neste navegador.");
     }
 
-    // Não precisa solicitar permissão, só desativar
-    const subscription = await getSubscription();
+    const safari = isSafariBrowser();
+    const subscription = safari
+      ? await getSafariSubscription()
+      : await getSubscription();
 
-    const data = await sendSubscriptionToServer({
+    const data = await apiPOST("http://localhost:7000/subscriptions/save",{
       id: userId,
       subscription,
       active: false,
     });
 
-    console.log("Response do servidor (NO):", data);
+    console.log("Disable response:", data);
 
     toast({
-      title: "Success!",
-      description: "Notificação desativada",
+      title: "Notificações desativadas",
+      description: "Você não receberá mais alertas.",
       variant: "destructive",
     });
-  } catch (error) {
-    console.error("Erro ao desativar notificações:", error);
+  } catch (error: any) {
     toast({
-      title: "Erro ao processar sua solicitação.",
+      title: "Erro ao desativar notificações",
       description: error.message,
       variant: "destructive",
     });
   } finally {
     setVisible(false);
-    location.reload();
+
   }
 }
+
+
 
 
   return (

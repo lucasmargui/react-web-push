@@ -19,13 +19,14 @@ const Dashboard = () => {
   const [totalUrgent, setTotalUrgent] = useState(0);
 
   const navigate = useNavigate();
+  
 
 useEffect(() => {
   const fetchHistory = async () => {
     try {
       // Busca os pushes
 // Busca os pushes
-    const res = await fetch("https://main-domain-example.win/pushes/get", {
+    const res = await fetch("http://localhost:7000/pushes/get", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -34,7 +35,7 @@ useEffect(() => {
     const data = await res.json();
 
     // Busca as subscriptions
-    const resSub = await fetch("https://main-domain-example.win/subscriptions/list", {
+    const resSub = await fetch("http://localhost:7000/subscriptions/list", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -110,6 +111,8 @@ const dataSub = await resSub.json(); // Corrigido: resSub.json() em vez de res.j
 
   return (
     <div className="p-6 space-y-6">
+
+      
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

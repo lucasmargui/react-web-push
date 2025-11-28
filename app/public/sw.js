@@ -1,19 +1,17 @@
 self.addEventListener('push', event => {
-    console.log("SW: Evento push disparou!");
-
     event.waitUntil((async () => {
-
-        // Apenas recebe os dados enviados, sem fallback
         let data = {};
+
         if (event.data) {
-            const rawText = await event.data.text();
             try {
-                data = JSON.parse(rawText);
+                // Tenta ler como JSON
+                data = event.data.json();
             } catch (e) {
-                data.body = rawText; // caso não seja JSON, usa apenas o texto
+                // Se não for JSON, usa apenas o texto como body
+                const rawText = await event.data.text();
+                data.body = rawText;
             }
         } else {
-            // Se não houver dados, não exibe notificação
             console.warn('SW: Push sem dados recebidos.');
             return;
         }
@@ -21,18 +19,12 @@ self.addEventListener('push', event => {
         // Mostra a notificação
         await self.registration.showNotification(data.title, {
             body: data.body,
-            data: data.url,
             icon: data.icon,
             image: data.image,
             tag: data.tag,
-            url: data.url,
-
-            // ➕ BOTÃO NO CANTO INFERIOR DIREITO
+            data: { url: data.url || 'http://localhost:8080/' }, // fallback seguro
             actions: [
-                {
-                    action: "open_url",
-                    title: "Abrir",
-                }
+                { action: "open_url", title: "Abrir" }
             ]
         });
 
@@ -43,27 +35,29 @@ self.addEventListener('push', event => {
         });
 
         for (const client of clientsList) {
-            client.postMessage({
-                type: "PUSH_RECEIVED",
-                ...data
-            });
+            client.postMessage({ type: "PUSH_RECEIVED", ...data });
         }
-
     })());
 });
 
 self.addEventListener('notificationclick', event => {
     event.notification.close();
+    const url = (event.notification.data && event.notification.data.url) || 'http://localhost:8080/';
 
-    // Recupera a URL enviada no payload
-    const url = event.notification.data?.url;
+    event.waitUntil((async () => {
+        const allClients = await clients.matchAll({
+            type: "window",
+            includeUncontrolled: true
+        });
 
-    // Se clicou no botão (action)
-    if (event.action === "open_url") {
-        event.waitUntil(clients.openWindow(url));
-        return;
-    }
+        for (const client of allClients) {
+            if (client.url === url && 'focus' in client) {
+                return client.focus();
+            }
+        }
 
-    // Se clicou no corpo da notificação
-    event.waitUntil(clients.openWindow(url));
+        if (clients.openWindow) {
+            return clients.openWindow(url);
+        }
+    })());
 });

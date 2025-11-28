@@ -22,14 +22,16 @@ const items = [
   { title: "Enviar Notificação", url: "/send", icon: Send },
   { title: "Histórico", url: "/history", icon: History },
   { title: "Configurações", url: "/settings", icon: Settings },
-  { title: "Profile", url: "/userprofile", icon: User },
+  { title: "Profile", url: "/profile", icon: User },
   { title: "Api", url: "/api", icon: User }
 ];
 
 export function AppSidebar({active, setActive}) {
-  const { open } = useSidebar();
+  const { open, state } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+
+
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
@@ -52,7 +54,7 @@ export function AppSidebar({active, setActive}) {
             )}
           </div>
         </div>
-        <NotificationStatus active={active} setActive={setActive}/>
+        <NotificationStatus active={active} setActive={setActive} open={open} />
 
         <SidebarGroup>
           <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
