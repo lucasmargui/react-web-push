@@ -103,3 +103,48 @@ jobs:
           echo "Imagem enviada!"
           echo "Tag: ${{ steps.build.outputs.image_tag }}"  # Mostra a tag da imagem
           echo "URI: ${{ steps.build.outputs.image_uri }}"  # Mostra a URI completa da imagem
+
+  deploy-ssh:
+    runs-on: ubuntu-latest
+    needs: build-image
+    steps:
+      - name: Deploy to VPS via SSH
+        env:
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          REPOSITORY: environment_test
+          IMAGE_TAG: ${{ needs.build-image.outputs.image_tag }}
+          INSTANCE_KEY: ${{ secrets.INSTANCE_KEY }}
+          ELASTIC_IP: ${{ secrets.ELASTIC_IP }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          CONTAINER_NAME: site
+        run: |
+          echo "$INSTANCE_KEY" | tr -d '\r' > key.pem
+          chmod 400 key.pem
+
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$ELASTIC_IP << EOF
+            export DOCKERHUB_USER="$DOCKERHUB_USER"
+            export REPOSITORY="$REPOSITORY"
+            export IMAGE_TAG="$IMAGE_TAG"
+            export ELASTIC_IP="$ELASTIC_IP"
+            export DOMAIN="$DOMAIN"
+            export CONTAINER_NAME="$CONTAINER_NAME"
+
+            echo "Atualizando sistema..."
+            sudo apt update  
+            sudo apt upgrade -y
+
+            echo "Instalando dependências..."
+            sudo apt install -y curl
+
+            echo "Instalando Docker..."
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
+
+            echo "Baixando CertBot"
+            sudo docker pull certbot/certbot:latest 
+
+            echo "Baixando certtificado ssl"
+            sudo docker run --rm -p 80:80 -v /etc/letsencrypt:/etc/letsencrypt -v /var/lib/letsencrypt:/var/lib/letsencrypt certbot/certbot:latest certonly --standalone --non-interactive --agree-tos --force-renewal --email seu-email@example.com -d $DOMAIN -d www.$DOMAIN
+          EOF
+
+          rm key.pem
