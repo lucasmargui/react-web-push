@@ -135,45 +135,6 @@ const checkShowBanner = (id: string, subscription: any) => {
   });
 };
 
-// ------------------------------------------------------
-// React Effect (Banner)
-// ------------------------------------------------------
-useEffect(() => {
-  if (!userId) return;
-
-  let timeoutId: any;
-
-  const getBrowserSubscription = async () => {
-    try {
-      return isSafariBrowser()
-        ? await getSafariSubscription()
-        : await getSubscription();
-    } catch (err) {
-      console.error("[Subscription] Error:", err);
-      return null;
-    }
-  };
-
-  const init = async () => {
-    try {
-      const subscription = await getBrowserSubscription();
-      const result = await checkShowBanner(userId, subscription);
-
-      if (result?.showBanner) {
-        timeoutId = setTimeout(() => setVisible(true), 500);
-      }
-    } catch (error) {
-      toast({
-        title: "Erro ao verificar banner",
-        description: String(error),
-        variant: "destructive",
-      });
-    }
-  };
-
-  init();
-  return () => clearTimeout(timeoutId);
-}, [userId]);
 
 // ------------------------------------------------------
 // Enable Notifications
@@ -291,6 +252,50 @@ async function handleDisableNotifications() {
 
   }
 }
+
+// ------------------------------------------------------
+// Browser Subscription
+// ------------------------------------------------------
+
+const getBrowserSubscription = async () => {
+  try {
+    return isSafariBrowser()
+      ? await getSafariSubscription()
+      : await getSubscription();
+  } catch (err) {
+    console.error("[Subscription] Error:", err);
+    return null;
+  }
+};
+
+// ------------------------------------------------------
+// React Effect (Banner)
+// ------------------------------------------------------
+useEffect(() => {
+  if (!userId) return;
+
+  let timeoutId: any;
+
+  const init = async () => {
+    try {
+      const subscription = await getBrowserSubscription();
+      const result = await checkShowBanner(userId, subscription);
+
+      if (result?.showBanner) {
+        timeoutId = setTimeout(() => setVisible(true), 500);
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao verificar banner",
+        description: String(error),
+        variant: "destructive",
+      });
+    }
+  };
+
+  init();
+  return () => clearTimeout(timeoutId);
+}, [userId]);
 
 
 
