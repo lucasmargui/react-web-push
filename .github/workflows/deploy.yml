@@ -111,6 +111,7 @@ jobs:
       - name: Deploy to VPS via SSH
         env:
           DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }} 
           REPOSITORY: react-web-push
           IMAGE_TAG: ${{ needs.build-image.outputs.image_tag }}
           INSTANCE_KEY: ${{ secrets.INSTANCE_KEY }}
@@ -128,6 +129,7 @@ jobs:
             export ELASTIC_IP="$ELASTIC_IP"
             export DOMAIN="$DOMAIN"
             export CONTAINER_NAME="$CONTAINER_NAME"
+            export DOCKERHUB_TOKEN="$DOCKERHUB_TOKEN"
 
             echo "Atualizando sistema..."
             sudo apt update  
@@ -154,6 +156,9 @@ jobs:
 
             echo "Baixando certtificado ssl"
             sudo docker run --rm -p 80:80 -v /etc/letsencrypt:/etc/letsencrypt -v /var/lib/letsencrypt:/var/lib/letsencrypt certbot/certbot:latest certonly --standalone --non-interactive --agree-tos --force-renewal --email lucasmartinsgui@outlook.com -d $DOMAIN -d www.$DOMAIN
+
+            echo "Realizando login no Docker Hub..."
+            echo "\$DOCKERHUB_TOKEN" | sudo docker login -u "\$DOCKERHUB_USER" --password-stdin
 
             IMAGE_URI=docker.io/\$DOCKERHUB_USER/\$REPOSITORY:\$IMAGE_TAG
             echo "Baixando imagem \$IMAGE_URI..."
