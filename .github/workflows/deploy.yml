@@ -136,15 +136,33 @@ jobs:
             echo "Instalando dependências..."
             sudo apt install -y curl
 
-            echo "Instalando Docker..."
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sudo sh get-docker.sh
+
+            if command -v docker >/dev/null 2>&1; then
+                echo "Docker já está instalado. Pulando instalação."
+            else
+                echo "Docker não encontrado. Instalando..."
+                curl -fsSL https://get.docker.com -o /root/get-docker.sh
+                sh /root/get-docker.sh
+            fi
 
             echo "Baixando CertBot"
             sudo docker pull certbot/certbot:latest 
 
+            if [ -n "\$CONTAINERS_PORT80" ]; then
+              echo "Parando containers que usam a porta 80..."
+              docker stop \$CONTAINERS_PORT80 || true
+              docker rm \$CONTAINERS_PORT80 || true
+            else
+              echo "Nenhum container usando a porta 80 encontrado."
+            fi
+
+            echo "Parando qualquer container na porta 80 para geracao de certificado"
+            sudo docker stop $(sudo docker ps -q --filter "publish=80") || true
+            sudo docker rm $(sudo docker ps -aq --filter "publish=80") || true
+
+
             echo "Baixando certtificado ssl"
-            sudo docker run --rm -p 80:80 -v /etc/letsencrypt:/etc/letsencrypt -v /var/lib/letsencrypt:/var/lib/letsencrypt certbot/certbot:latest certonly --standalone --non-interactive --agree-tos --force-renewal --email seu-email@example.com -d $DOMAIN -d www.$DOMAIN
+            sudo docker run --rm -p 80:80 -v /etc/letsencrypt:/etc/letsencrypt -v /var/lib/letsencrypt:/var/lib/letsencrypt certbot/certbot:latest certonly --standalone --non-interactive --agree-tos --force-renewal --email lucasmartinsgui@outlook.com -d $DOMAIN -d www.$DOMAIN
           EOF
 
           rm key.pem
