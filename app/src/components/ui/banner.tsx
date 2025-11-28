@@ -313,15 +313,25 @@ useEffect(() => {
   };
   const checkServiceWorkerReady = async () => {
     try {
-      const registration = await navigator.serviceWorker.ready;
-      if (registration) {
-        setSwReady(true); // SW pronto
+      const isSafari = isSafariBrowser();
+      if(!isSafari){
+        const registration = await navigator.serviceWorker.ready;
+        if (registration) {
+          setSwReady(true); // SW pronto
+        }
+      }else{
+        toast({
+        title: "Safari",
+          description: `Service Worker não é suportado neste navegador. Necessário configuração com Apple Push Notification service`,
+          variant: "destructive",
+        })
       }
+
     } catch (error) {
       setSwReady(false);
-       toast({
+      toast({
         title: "Notificação",
-        description: `Service Worker não está pronto ou não é suportado.${error} `,
+        description: `Service Worker error.${error} `,
         variant: "destructive",
       });
       console.error("Service Worker não está pronto ou não é suportado.", error);
