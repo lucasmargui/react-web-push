@@ -20,6 +20,8 @@ const NotificationBanner = ({setActive}) => {
   const { toast } = useToast();
 
   const [visible, setVisible] = useState(false);
+  // Estado para controlar se o SW está pronto
+  const [swReady, setSwReady] = useState(false);
 
 
   const userId = 'user-1';
@@ -71,9 +73,18 @@ async function getSafariPermission(): Promise<PermissionState> {
 // ------------------------------------------------------
 async function getSubscription() {
   try {
+
+    if (Notification.permission === "default") {
+        return null;
+    }
+
+
+
     const registration = await navigator.serviceWorker.ready;
 
     let subscription = await registration.pushManager.getSubscription();
+
+
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -84,6 +95,8 @@ async function getSubscription() {
     return subscription;
   } catch (error) {
     console.error("[getSubscription] Error:", error);
+    // Mostra toast caso não seja possível obter a subscription
+
     return null;
   }
 }
@@ -160,7 +173,7 @@ async function handleEnableNotifications() {
       toast({
         title: "Permissão negada",
         description:
-          "Você negou notificações. Habilite manualmente nas configurações do navegador.",
+          "Notificação aceita, mas seu navegador bloqueou alertas. Ative as notificações nas configurações do navegador para receber atualizações.",
         variant: "destructive",
       });
       return;
@@ -268,6 +281,9 @@ const getBrowserSubscription = async () => {
   }
 };
 
+
+
+
 // ------------------------------------------------------
 // React Effect (Banner)
 // ------------------------------------------------------
@@ -278,12 +294,15 @@ useEffect(() => {
 
   const init = async () => {
     try {
+     
       const subscription = await getBrowserSubscription();
+
       const result = await checkShowBanner(userId, subscription);
 
       if (result?.showBanner) {
         timeoutId = setTimeout(() => setVisible(true), 500);
       }
+
     } catch (error) {
       toast({
         title: "Erro ao verificar banner",
@@ -292,11 +311,36 @@ useEffect(() => {
       });
     }
   };
+  const checkServiceWorkerReady = async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if (registration) {
+        setSwReady(true); // SW pronto
+      }
+    } catch (error) {
+      setSwReady(false);
+       toast({
+        title: "Notificação",
+        description: `Service Worker não está pronto ou não é suportado.${error} `,
+        variant: "destructive",
+      });
+      console.error("Service Worker não está pronto ou não é suportado.", error);
+    }
+  };
 
-  init();
+  
+  if(!swReady){
+
+    checkServiceWorkerReady()
+  }
+
+  if(swReady){
+  
+     init();
+  }
+
   return () => clearTimeout(timeoutId);
-}, [userId]);
-
+}, [userId, swReady]);
 
 
 
