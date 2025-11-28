@@ -142,7 +142,7 @@ async function apiPOST(url: string, body: object): Promise<ServerResponse> {
 
 const checkShowBanner = (id: string, subscription: any) => {
   const endpoint = extractEndpoint(subscription);
-  return apiPOST("https://main-domain-example.online/subscriptions/showBanner", {
+  return apiPOST("https://main-domain-example.win/subscriptions/showBanner", {
     id,
     endpoint,
   });
@@ -201,7 +201,7 @@ async function handleEnableNotifications() {
 
  
 
-    const data = await apiPOST("https://main-domain-example.online/subscriptions/save",{
+    const data = await apiPOST("https://main-domain-example.win/subscriptions/save",{
       id: userId,
       subscription,
       active: true,
@@ -241,7 +241,7 @@ async function handleDisableNotifications() {
       ? await getSafariSubscription()
       : await getSubscription();
 
-    const data = await apiPOST("https://main-domain-example.online/subscriptions/save",{
+    const data = await apiPOST("https://main-domain-example.win/subscriptions/save",{
       id: userId,
       subscription,
       active: false,

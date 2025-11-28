@@ -26,7 +26,7 @@ useEffect(() => {
     try {
       // Busca os pushes
 // Busca os pushes
-    const res = await fetch("https://main-domain-example.online/pushes/get", {
+    const res = await fetch("https://main-domain-example.win/pushes/get", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -35,7 +35,7 @@ useEffect(() => {
     const data = await res.json();
 
     // Busca as subscriptions
-    const resSub = await fetch("https://main-domain-example.online/subscriptions/list", {
+    const resSub = await fetch("https://main-domain-example.win/subscriptions/list", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

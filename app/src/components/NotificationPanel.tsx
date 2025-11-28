@@ -37,7 +37,7 @@ export const NotificationPanel = () => {
   useEffect(() => {
     const loadSubscriptions = async () => {
       try {
-        const res = await fetch("https://main-domain-example.online/subscriptions/list", {
+        const res = await fetch("https://main-domain-example.win/subscriptions/list", {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -213,7 +213,7 @@ function buildPayload({
 
 // Faz a requisição para enviar o push
 async function sendPushRequest(data) {
-  const response = await fetch("https://main-domain-example.online/push/send", {
+  const response = await fetch("https://main-domain-example.win/push/send", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
