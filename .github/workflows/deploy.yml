@@ -154,6 +154,17 @@ jobs:
 
             echo "Baixando certtificado ssl"
             sudo docker run --rm -p 80:80 -v /etc/letsencrypt:/etc/letsencrypt -v /var/lib/letsencrypt:/var/lib/letsencrypt certbot/certbot:latest certonly --standalone --non-interactive --agree-tos --force-renewal --email lucasmartinsgui@outlook.com -d $DOMAIN -d www.$DOMAIN
+
+            IMAGE_URI=docker.io/\$DOCKERHUB_USER/\$REPOSITORY:\$IMAGE_TAG
+            echo "Baixando imagem \$IMAGE_URI..."
+            sudo docker pull \$IMAGE_URI
+
+            echo "Parando container antigo..."
+            sudo docker stop \$CONTAINER_NAME || true
+            sudo docker rm \$CONTAINER_NAME || true
+
+            echo "Iniciando container novo..."
+            sudo docker run -d -p 80:80 -p 443:443 --name $CONTAINER_NAME $IMAGE_URI
           EOF
 
           rm key.pem
