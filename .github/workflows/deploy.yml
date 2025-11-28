@@ -166,6 +166,9 @@ jobs:
               echo "Nenhum processo usando porta 80."
             fi
 
+            sudo systemctl stop nginx
+            sudo systemctl disable nginx
+
             echo "Baixando certtificado ssl"
             sudo docker run --rm -p 80:80 -v /etc/letsencrypt:/etc/letsencrypt -v /var/lib/letsencrypt:/var/lib/letsencrypt certbot/certbot:latest certonly --standalone --non-interactive --agree-tos --force-renewal --email lucasmartinsgui@outlook.com -d $DOMAIN -d www.$DOMAIN
           EOF
