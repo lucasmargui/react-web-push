@@ -111,7 +111,7 @@ jobs:
       - name: Deploy to VPS via SSH
         env:
           DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
-          REPOSITORY: environment_test
+          REPOSITORY: react-web-push
           IMAGE_TAG: ${{ needs.build-image.outputs.image_tag }}
           INSTANCE_KEY: ${{ secrets.INSTANCE_KEY }}
           ELASTIC_IP: ${{ secrets.ELASTIC_IP }}
