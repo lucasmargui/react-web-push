@@ -1,0 +1,105 @@
+# Nome do workflow, aparece na aba Actions do GitHub
+name: Pipeline CI/CD
+
+# Dispara o workflow em determinados eventos
+on:
+  push:                   # Dispara quando houver push
+    branches:
+      - main              # Quando for na branch main
+      - dev               # Quando for na branch dev
+      - '*'               # Ou qualquer outra branch
+
+# Define os jobs que serão executados
+jobs:
+  build-image:
+    runs-on: ubuntu-latest   # Define o sistema operacional da máquina virtual
+
+    # Outputs do job, podem ser usados por outros jobs se existirem
+    outputs:
+      image_tag: ${{ steps.build.outputs.image_tag }}  # Tag da imagem Docker
+      image_uri: ${{ steps.build.outputs.image_uri }}  # URI completa da imagem Docker
+
+    # Lista de steps (passos) que serão executados no job
+    steps:
+
+      ###############################
+      # 1️⃣ Baixar código do repositório
+      - name: Checkout code
+        uses: actions/checkout@v5.0.0
+        # Baixa todo o código do repositório para a máquina virtual,
+        # permitindo que os próximos steps acessem os arquivos.
+
+      ###############################
+      # 2️⃣ Detectar automaticamente o ambiente (dev, prod ou test)
+      - name: Define environment
+        id: env                 # Dá um ID para o step, permitindo acessar outputs dele depois
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            # Se a branch for main, define ambiente como "prod"
+            echo "environment=prod" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF_NAME}" == "dev" ]]; then
+            # Se a branch for dev, define ambiente como "dev"
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            # Para qualquer outra branch, define ambiente como "test"
+            echo "environment=test" >> $GITHUB_OUTPUT
+          fi
+        # $GITHUB_OUTPUT é um arquivo especial do GitHub Actions que armazena
+        # outputs do step. Aqui estamos criando um output chamado "environment",
+        # que será acessível por steps futuros como:
+        # ${{ steps.env.outputs.environment }}
+
+      ######################### CREDENTIALS #############################
+      # Debug de variáveis de ambiente / segredos
+      - name: Debug env
+        run: |
+          # Mostra se as credenciais do Docker Hub estão vazias
+          # Não imprime os valores reais por segurança
+          echo "USER empty? -> ${{ secrets.DOCKERHUB_USERNAME == '' }}"
+          echo "TOKEN empty? -> ${{ secrets.DOCKERHUB_TOKEN == '' }}"
+
+      # Login no Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}  # Usuário do Docker Hub (secreto)
+          password: ${{ secrets.DOCKERHUB_TOKEN }}     # Token do Docker Hub (secreto)
+        # Isso autentica o runner para permitir enviar imagens Docker
+
+      ###############################
+      # 3️⃣ Build + Push da imagem Docker
+      - name: Build, tag, and push docker image to Docker Hub
+        id: build      # Define ID para o step, necessário para criar outputs
+        env:
+          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}  # Usuário Docker
+          REPOSITORY: react-web-push                        # Nome do repositório Docker
+          ENVIRONMENT: ${{ steps.env.outputs.environment }}   # Ambiente detectado no step anterior
+
+        run: |
+          # Pega os primeiros 7 caracteres do SHA do commit atual
+          COMMIT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+
+          # Cria uma tag única para a imagem, combinando ambiente + commit
+          IMAGE_TAG=${ENVIRONMENT}-${COMMIT_SHA}
+
+          # Monta a URI completa da imagem Docker
+          IMAGE_URI=docker.io/$DOCKERHUB_USER/$REPOSITORY:$IMAGE_TAG
+
+          echo "🔨 Build da imagem..."
+          docker build -t $IMAGE_URI .   # Constrói a imagem usando o Dockerfile da raiz
+
+          echo "⬆️ Pushing..."
+          docker push $IMAGE_URI         # Envia a imagem para o Docker Hub
+
+          # Cria outputs do step, que podem ser acessados depois como:
+          # steps.build.outputs.image_tag / image_uri
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+      ###############################
+      # 4️⃣ Print final / Informações de deploy
+      - name: Deployment Info
+        run: |
+          echo "Imagem enviada!"
+          echo "Tag: ${{ steps.build.outputs.image_tag }}"  # Mostra a tag da imagem
+          echo "URI: ${{ steps.build.outputs.image_uri }}"  # Mostra a URI completa da imagem

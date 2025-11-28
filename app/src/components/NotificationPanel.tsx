@@ -8,11 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { NotificationPreview } from "./NotificationPreview";
 import { Send, Upload, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { URL } from "@/config"
 
 interface Metadata {
   id: string;
   role: string;
 }
+
 
 export const NotificationPanel = () => {
   const { toast } = useToast();
@@ -37,7 +39,7 @@ export const NotificationPanel = () => {
   useEffect(() => {
     const loadSubscriptions = async () => {
       try {
-        const res = await fetch("https://main-domain-example.win/subscriptions/list", {
+        const res = await fetch(`${URL}/subscriptions/list`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json"
@@ -213,7 +215,7 @@ function buildPayload({
 
 // Faz a requisição para enviar o push
 async function sendPushRequest(data) {
-  const response = await fetch("https://main-domain-example.win/push/send", {
+  const response = await fetch(`${URL}/push/send`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, Download, Bell, CheckCircle2, XCircle } from "lucide-react";
+import { URL } from "@/config"
 
 const History = () => {
   const [historyData, setHistoryData] = useState([]);
@@ -13,7 +14,7 @@ const History = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch("https://main-domain-example.win/pushes/get", {
+        const res = await fetch(`${URL}/pushes/get`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

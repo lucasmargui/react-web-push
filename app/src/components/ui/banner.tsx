@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import  checkBrowser from "@/utils/browserInfo"
-
+import { URL } from "@/config"
 
 const PUBLIC_VAPID_KEY = "BNyR2VIokuew2M6DO_rVgVdJmqJwiG69i4jzMiLOtw-Eyf3UGuJLONEgdycUB6lwksnfS9dl4zgkvnpcOO4X4WA";
 
 const safari_web_push_url = "xxxxxxxxxxxxxxxx"
 const safari_web_push_id = "xxxxxxxxxxxxxxxxx"
+
+
 
 // Função auxiliar para converter VAPID key
 function urlBase64ToUint8Array(base64String) {
@@ -141,8 +143,10 @@ async function apiPOST(url: string, body: object): Promise<ServerResponse> {
 
 
 const checkShowBanner = (id: string, subscription: any) => {
+
+  console.log();
   const endpoint = extractEndpoint(subscription);
-  return apiPOST("https://main-domain-example.win/subscriptions/showBanner", {
+  return apiPOST(`${URL}/subscriptions/showBanner`, {
     id,
     endpoint,
   });
@@ -201,7 +205,7 @@ async function handleEnableNotifications() {
 
  
 
-    const data = await apiPOST("https://main-domain-example.win/subscriptions/save",{
+    const data = await apiPOST(`${URL}/subscriptions/save`,{
       id: userId,
       subscription,
       active: true,
@@ -241,7 +245,7 @@ async function handleDisableNotifications() {
       ? await getSafariSubscription()
       : await getSubscription();
 
-    const data = await apiPOST("https://main-domain-example.win/subscriptions/save",{
+    const data = await apiPOST(`${URL}/subscriptions/save`,{
       id: userId,
       subscription,
       active: false,

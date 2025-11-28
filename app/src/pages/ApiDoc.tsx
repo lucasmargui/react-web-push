@@ -1,5 +1,7 @@
 import React from "react";
 
+import { URL } from "@/config"
+
 const ApiDocumentation = () => {
   return (
     <div className="max-w-4xl mx-auto p-6 bg-gray-50 min-h-screen">
@@ -8,7 +10,7 @@ const ApiDocumentation = () => {
       <section className="mb-8">
         <h2 className="text-2xl font-semibold mb-2">Endpoint</h2>
         <pre className="bg-gray-100 p-4 rounded text-sm overflow-x-auto">
-          POST https://main-domain-example.win/push/send
+          POST {URL}/push/send
         </pre>
         <p>Content-Type: <strong>application/json</strong></p>
       </section>
@@ -141,7 +143,7 @@ const request = {
   pushType: "single"
 };
 
-const response = await fetch('https://main-domain-example.win/push/send', {
+const response = await fetch('${URL}/push/send', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(request)

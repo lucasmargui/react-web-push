@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, BellOff } from "lucide-react";
-
+import { URL } from "@/config" 
 
 const NotificationStatus = ({active, setActive, open}) => {
   const [visible, setVisible] = useState(false);
@@ -23,7 +23,7 @@ const NotificationStatus = ({active, setActive, open}) => {
         }
 
         // Consulta o backend
-        const res = await fetch("https://main-domain-example.win/subscriptions/active", {
+        const res = await fetch(`${URL}/subscriptions/active`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

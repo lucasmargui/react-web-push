@@ -1,20 +1,17 @@
 version: "3.9"
 
 services:
-  nginx:
-    image: nginx:alpine
+  react-app:
+    build: .
     container_name: react_nginx
-    restart: always
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - ./app/dist:/usr/share/nginx/html:ro
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro   # <- mapeamento direto do host
-      - /var/lib/letsencrypt:/var/lib/letsencrypt:ro
-    depends_on:
-      - certbot
+    environment:
+      - VITE_API_URL=https://main-domain-example.online
+
+    command: /bin/sh -c "envsubst '\$VITE_API_URL' < /usr/share/nginx/html/env.js > /usr/share/nginx/html/env.js && nginx -g 'daemon off;'"
+    
 
   certbot:
     image: certbot/certbot

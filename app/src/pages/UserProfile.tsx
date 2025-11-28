@@ -5,7 +5,7 @@ import { User, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-
+import { URL } from "@/config"
 
 const UserInfo = () => {
 
@@ -35,7 +35,8 @@ const UserInfo = () => {
   const handleClearJson = async () => {
     setClearing(true);
     try {
-      const res = await fetch("https://main-domain-example.win/admin/clear-json", {
+      console.log()
+      const res = await fetch(`${URL}/admin/clear-json`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,6 +44,8 @@ const UserInfo = () => {
       });
 
       const data = await res.json(); // se a resposta for JSON
+
+      console.log(data)
 
       if (!res.ok) throw new Error(`Erro HTTP: ${res.status}`);
 

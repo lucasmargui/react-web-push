@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Send, CheckCircle2, Clock, Users, TrendingUp, Bell, ArrowUpRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { URL } from "@/config"
 
 const Dashboard = () => {
 
@@ -26,7 +27,7 @@ useEffect(() => {
     try {
       // Busca os pushes
 // Busca os pushes
-    const res = await fetch("https://main-domain-example.win/pushes/get", {
+    const res = await fetch(`${URL}/pushes/get`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -35,7 +36,7 @@ useEffect(() => {
     const data = await res.json();
 
     // Busca as subscriptions
-    const resSub = await fetch("https://main-domain-example.win/subscriptions/list", {
+    const resSub = await fetch(`${URL}/subscriptions/list`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
