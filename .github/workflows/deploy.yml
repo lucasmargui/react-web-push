@@ -148,18 +148,23 @@ jobs:
             echo "Baixando CertBot"
             sudo docker pull certbot/certbot:latest 
 
-            if [ -n "\$CONTAINERS_PORT80" ]; then
-              echo "Parando containers que usam a porta 80..."
-              docker stop \$CONTAINERS_PORT80 || true
-              docker rm \$CONTAINERS_PORT80 || true
+            echo "Parando containers Docker na porta 80"
+            CONTAINERS_PORT80=$(sudo docker ps -q --filter publish=80)
+            if [ ! -z "$CONTAINERS_PORT80" ]; then
+              sudo docker stop $CONTAINERS_PORT80 || true
+              sudo docker rm $CONTAINERS_PORT80 || true
             else
-              echo "Nenhum container usando a porta 80 encontrado."
+              echo "Nenhum container Docker na porta 80."
             fi
 
-            echo "Parando qualquer container na porta 80 para geracao de certificado"
-            sudo docker stop $(sudo docker ps -q --filter "publish=80") || true
-            sudo docker rm $(sudo docker ps -aq --filter "publish=80") || true
-
+            echo "Parando qualquer processo no host usando porta 80"
+            PORT80_PID=$(sudo lsof -t -i:80)
+            if [ ! -z "$PORT80_PID" ]; then
+              echo "Matando processo na porta 80 (PID: $PORT80_PID)"
+              sudo kill -9 $PORT80_PID || true
+            else
+              echo "Nenhum processo usando porta 80."
+            fi
 
             echo "Baixando certtificado ssl"
             sudo docker run --rm -p 80:80 -v /etc/letsencrypt:/etc/letsencrypt -v /var/lib/letsencrypt:/var/lib/letsencrypt certbot/certbot:latest certonly --standalone --non-interactive --agree-tos --force-renewal --email lucasmartinsgui@outlook.com -d $DOMAIN -d www.$DOMAIN
