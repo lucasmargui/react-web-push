@@ -72,7 +72,7 @@ jobs:
         id: build      # Define ID para o step, necessário para criar outputs
         env:
           DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}  # Usuário Docker
-          REPOSITORY: node-web-push                        # Nome do repositório Docker
+          REPOSITORY: react-web-push                        # Nome do repositório Docker
           ENVIRONMENT: ${{ steps.env.outputs.environment }}   # Ambiente detectado no step anterior
 
         run: |
@@ -113,7 +113,7 @@ jobs:
         env:
           DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          REPOSITORY: node-web-push
+          REPOSITORY: react-web-push
           IMAGE_TAG: ${{ needs.build-image.outputs.image_tag }}
           INSTANCE_KEY: ${{ secrets.INSTANCE_KEY }}
           ELASTIC_IP: ${{ secrets.ELASTIC_IP }}
@@ -160,13 +160,15 @@ jobs:
             sudo mkdir -p /etc/letsencrypt
             sudo mkdir -p /var/lib/letsencrypt
 
-            echo "Iniciando novo container..."
+            echo "Subindo novo container NGINX + REACT..."
             sudo docker run -d \
-            --name \$CONTAINER_NAME \
-            -p 80:80 -p 443:443 \
-            -v /etc/letsencrypt:/etc/letsencrypt:ro \
-            -v /var/lib/letsencrypt:/var/lib/letsencrypt:ro \
-            \$IMAGE_URI
+                --name \$CONTAINER_NAME \
+                -p 80:80 \
+                -p 443:443 \
+                -e VITE_API_URL="https://\$DOMAIN" \
+                -v /etc/letsencrypt:/etc/letsencrypt \
+                -v /var/lib/letsencrypt:/var/lib/letsencrypt \
+                \$IMAGE_URI
 
             echo "Reload no container..."
             sudo docker restart \$CONTAINER_NAME
