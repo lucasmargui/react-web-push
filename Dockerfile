@@ -21,13 +21,11 @@ COPY --from=build /app/dist /usr/share/nginx/html
 
 # copiar nginx config
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY config/env.js /usr/share/nginx/html/env.js
 
 # copiar arquivo de template para ser processado depois
-COPY config/env.template.js /usr/share/nginx/html/env.template.js
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# entrypoint que gera env.js dinamicamente
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["nginx", "-g", "daemon off;"]
+# Entrypoint que injeta variáveis em runtime
+ENTRYPOINT ["/entrypoint.sh"]
