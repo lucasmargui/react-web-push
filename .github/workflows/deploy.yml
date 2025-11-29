@@ -123,7 +123,7 @@ jobs:
           echo "$INSTANCE_KEY" | tr -d '\r' > key.pem
           chmod 400 key.pem
 
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$ELASTIC_IP << EOF
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$DOMAIN << EOF
             export DOCKERHUB_USER="${DOCKERHUB_USER}"
             export REPOSITORY="${REPOSITORY}"
             export IMAGE_TAG="${IMAGE_TAG}"
