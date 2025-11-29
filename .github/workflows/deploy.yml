@@ -104,71 +104,55 @@ jobs:
           echo "Tag: ${{ steps.build.outputs.image_tag }}"  # Mostra a tag da imagem
           echo "URI: ${{ steps.build.outputs.image_uri }}"  # Mostra a URI completa da imagem
 
-  deploy-ssh:
-    runs-on: ubuntu-latest
-    needs: build-image
-    steps:
-      - name: Deploy to VPS via SSH
-        env:
-          DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }} 
-          REPOSITORY: react-web-push
-          IMAGE_TAG: ${{ needs.build-image.outputs.image_tag }}
-          INSTANCE_KEY: ${{ secrets.INSTANCE_KEY }}
-          ELASTIC_IP: ${{ secrets.ELASTIC_IP }}
-          DOMAIN: ${{ secrets.DOMAIN }}
-          CONTAINER_NAME: site
-        run: |
-          echo "$INSTANCE_KEY" | tr -d '\r' > key.pem
-          chmod 400 key.pem
+deploy-ssh:
+  runs-on: ubuntu-latest
+  needs: build-image
 
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$ELASTIC_IP << EOF
-            export DOCKERHUB_USER="${DOCKERHUB_USER}"
-            export REPOSITORY="${REPOSITORY}"
-            export IMAGE_TAG="${IMAGE_TAG}"
-            export DOMAIN="${DOMAIN}"
-            export CONTAINER_NAME="${CONTAINER_NAME}"
-            export DOCKERHUB_TOKEN="${DOCKERHUB_TOKEN}"
+  steps:
+    - name: Deploy via SSH
+      env:
+        DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        REPOSITORY: react-web-push
+        IMAGE_TAG: ${{ needs.build-image.outputs.image_tag }}
+        INSTANCE_KEY: ${{ secrets.INSTANCE_KEY }}
+        ELASTIC_IP: ${{ secrets.ELASTIC_IP }}
+      run: |
+        echo "$INSTANCE_KEY" | tr -d '\r' > key.pem
+        chmod 400 key.pem
 
-            echo "Atualizando sistema..."
-            sudo apt update  
-            sudo apt upgrade -y
+        ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$ELASTIC_IP << 'EOF'
+          set -e
 
-            echo "Instalando dependências..."
-            sudo apt install -y curl
+          echo "Atualizando sistema..."
+          sudo apt update
 
+          echo "Verificando Docker..."
+          if ! command -v docker >/dev/null 2>&1; then
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sh get-docker.sh
+          fi
 
-            if command -v docker >/dev/null 2>&1; then
-                echo "Docker já está instalado. Pulando instalação."
-            else
-                echo "Docker não encontrado. Instalando..."
-                curl -fsSL https://get.docker.com -o /root/get-docker.sh
-                sh /root/get-docker.sh
-            fi
+          echo "Login Docker Hub..."
+          echo "$DOCKERHUB_TOKEN" | sudo docker login -u "$DOCKERHUB_USER" --password-stdin
 
-            echo "Parando container antigo..."
-            sudo docker stop \$CONTAINER_NAME || true
-            sudo docker rm \$CONTAINER_NAME || true
+          IMAGE_URI=docker.io/$DOCKERHUB_USER/$REPOSITORY:$IMAGE_TAG
 
-            echo "Baixando CertBot"
-            sudo docker pull certbot/certbot:latest 
+          echo "Baixando imagem..."
+          sudo docker pull $IMAGE_URI
 
-            echo "Baixando certtificado ssl"
-            sudo docker run --rm -p 80:80 -v /etc/letsencrypt:/etc/letsencrypt -v /var/lib/letsencrypt:/var/lib/letsencrypt certbot/certbot:latest certonly --standalone --non-interactive --agree-tos --force-renewal --email lucasmartinsgui@outlook.com -d $DOMAIN -d www.$DOMAIN
+          echo "Criando pasta destino..."
+          sudo mkdir -p /var/www/site
 
-            echo "Realizando login no Docker Hub..."
-            echo "$DOCKERHUB_TOKEN" | sudo docker login -u "\$DOCKERHUB_USER" --password-stdin
+          echo "Copiando build para /var/www/site..."
+          sudo docker run --rm \
+            -v /var/www/site:/deploy \
+            $IMAGE_URI
 
-            IMAGE_URI=docker.io/\$DOCKERHUB_USER/\$REPOSITORY:\$IMAGE_TAG
-            echo "Baixando imagem \$IMAGE_URI..."
-            sudo docker pull \$IMAGE_URI
+          echo "Reiniciando Nginx..."
+          sudo systemctl restart nginx
 
-            echo "Parando container antigo..."
-            sudo docker stop \$CONTAINER_NAME || true
-            sudo docker rm \$CONTAINER_NAME || true
+          echo "Deploy concluído!"
+        EOF
 
-            echo "Iniciando container novo..."
-            sudo docker run -d -p 80:80 -p 443:443 --name \$CONTAINER_NAME \$IMAGE_URI
-          EOF
-
-          rm key.pem
+        rm key.pem
