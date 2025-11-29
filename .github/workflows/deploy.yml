@@ -164,12 +164,12 @@ jobs:
             echo "Baixando imagem \$IMAGE_URI..."
             sudo docker pull \$IMAGE_URI
 
-            echo "Parando container antigo..."
+            echo "Parando container antigo.."
             sudo docker stop \$CONTAINER_NAME || true
             sudo docker rm \$CONTAINER_NAME || true
 
             echo "Iniciando container novo..."
-            sudo docker run -d -p 80:80 -p 443:443 --name $CONTAINER_NAME $IMAGE_URI
+            sudo docker run -d -p 80:80 -p 443:443 --name \$CONTAINER_NAME \$IMAGE_URI
           EOF
 
           rm key.pem
