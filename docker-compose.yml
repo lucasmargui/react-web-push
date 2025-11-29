@@ -9,8 +9,9 @@ services:
       - "443:443"
     environment:
       - VITE_API_URL=https://main-domain-example.online
-
-    command: /bin/sh -c "envsubst '\$VITE_API_URL' < /usr/share/nginx/html/env.js > /usr/share/nginx/html/env.js && nginx -g 'daemon off;'"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
     
 
   certbot:
