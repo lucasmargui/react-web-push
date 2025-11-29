@@ -160,15 +160,13 @@ jobs:
             sudo mkdir -p /etc/letsencrypt
             sudo mkdir -p /var/lib/letsencrypt
 
-            echo "Subindo novo container NGINX + REACT..."
+            echo "Iniciando novo container..."
             sudo docker run -d \
-                --name \$CONTAINER_NAME \
-                -p 80:80 \
-                -p 443:443 \
-                -e VITE_API_URL="https://\$DOMAIN" \
-                -v /etc/letsencrypt:/etc/letsencrypt \
-                -v /var/lib/letsencrypt:/var/lib/letsencrypt \
-                \$IMAGE_URI
+            --name \$CONTAINER_NAME \
+            -p 80:80 -p 443:443 \
+            -v /etc/letsencrypt:/etc/letsencrypt:ro \
+            -v /var/lib/letsencrypt:/var/lib/letsencrypt:ro \
+            \$IMAGE_URI
 
             echo "Reload no container..."
             sudo docker restart \$CONTAINER_NAME
