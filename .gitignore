@@ -10,6 +10,7 @@ lerna-debug.log*
 app/node_modules
 app/dist
 
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -20,3 +21,6 @@ app/dist
 *.njsproj
 *.sln
 *.sw?
+
+
+dockerhub.info.txt

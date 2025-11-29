@@ -72,7 +72,7 @@ jobs:
         id: build      # Define ID para o step, necessário para criar outputs
         env:
           DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}  # Usuário Docker
-          REPOSITORY: react-web-push                        # Nome do repositório Docker
+          REPOSITORY: node-web-push                        # Nome do repositório Docker
           ENVIRONMENT: ${{ steps.env.outputs.environment }}   # Ambiente detectado no step anterior
 
         run: |
@@ -113,7 +113,7 @@ jobs:
         env:
           DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          REPOSITORY: react-web-push
+          REPOSITORY: node-web-push
           IMAGE_TAG: ${{ needs.build-image.outputs.image_tag }}
           INSTANCE_KEY: ${{ secrets.INSTANCE_KEY }}
           ELASTIC_IP: ${{ secrets.ELASTIC_IP }}
