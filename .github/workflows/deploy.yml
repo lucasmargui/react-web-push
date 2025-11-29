@@ -123,13 +123,13 @@ jobs:
           echo "$INSTANCE_KEY" | tr -d '\r' > key.pem
           chmod 400 key.pem
 
-          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$ELASTIC_IP << 'EOF'
-            export DOCKERHUB_USER="$DOCKERHUB_USER"
-            export REPOSITORY="$REPOSITORY"
-            export IMAGE_TAG="$IMAGE_TAG"
-            export DOMAIN="$DOMAIN"
-            export CONTAINER_NAME="$CONTAINER_NAME"
-            export DOCKERHUB_TOKEN="$DOCKERHUB_TOKEN"
+          ssh -i key.pem -o StrictHostKeyChecking=no ubuntu@$ELASTIC_IP << EOF
+            export DOCKERHUB_USER="${DOCKERHUB_USER}"
+            export REPOSITORY="${REPOSITORY}"
+            export IMAGE_TAG="${IMAGE_TAG}"
+            export DOMAIN="${DOMAIN}"
+            export CONTAINER_NAME="${CONTAINER_NAME}"
+            export DOCKERHUB_TOKEN="${DOCKERHUB_TOKEN}"
 
             echo "Atualizando sistema..."
             sudo apt update
@@ -162,30 +162,17 @@ jobs:
 
             echo "Subindo novo container NGINX + REACT..."
             sudo docker run -d \
-              --name \$CONTAINER_NAME \
-              -p 80:80 \
-              -p 443:443 \
-              -e VITE_API_URL="https://\$DOMAIN" \
-              -v /etc/letsencrypt:/etc/letsencrypt \
-              -v /var/lib/letsencrypt:/var/lib/letsencrypt \
-              \$IMAGE_URI
+                --name \$CONTAINER_NAME \
+                -p 80:80 \
+                -p 443:443 \
+                -e VITE_API_URL="https://\$DOMAIN" \
+                -v /etc/letsencrypt:/etc/letsencrypt \
+                -v /var/lib/letsencrypt:/var/lib/letsencrypt \
+                \$IMAGE_URI
 
-            echo "Renovando/instalando certificado usando webroot..."
-            sudo docker run --rm \
-              -v /etc/letsencrypt:/etc/letsencrypt \
-              -v /var/lib/letsencrypt:/var/lib/letsencrypt \
-              -v $(sudo docker inspect -f '{{range .Mounts}}{{if eq .Destination "/usr/share/nginx/html"}}{{.Source}}{{end}}{{end}}' \$CONTAINER_NAME):/usr/share/nginx/html \
-              certbot/certbot certonly \
-                --webroot \
-                --agree-tos \
-                --email lucasmartinsgui@outlook.com \
-                -w /usr/share/nginx/html \
-                -d \$DOMAIN \
-                -d www.\$DOMAIN \
-                --non-interactive
-
-            echo "Reload no container para carregar o SSL..."
+            echo "Reload no container..."
             sudo docker restart \$CONTAINER_NAME
           EOF
+
 
           rm key.pem
